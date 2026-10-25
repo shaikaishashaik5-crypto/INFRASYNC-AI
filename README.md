@@ -1,35 +1,59 @@
-# INFRASYNC AI — Site Command
+## 🚀 Run InfraSync AI with Docker
 
-Real-time construction site coordination: workers report from the field, the manager dashboard updates instantly.
+InfraSync AI is a real-time construction site coordination platform. Workers can submit progress updates from the field, and managers can monitor updates in real time.
 
-## Run on Windows
-1. Install Python 3.10+ from python.org (tick **Add python.exe to PATH**).
-2. Unzip the project, then double-click **run.bat**. The first run installs everything and opens http://localhost:8000.
+### Prerequisites
 
-## Run (Ubuntu)
+- Install [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/) or Docker Engine on Ubuntu.
+- Ensure Docker is running and your computer has an internet connection.
+
+### Quick Start
+
+**1. Download the latest Docker image**
+
 ```bash
-unzip infrasync-ai.zip && cd infrasync-ai
-chmod +x run.sh && ./run.sh
+docker pull ghcr.io/shaikaishashaik5-crypto/infrasync-ai:latest
 ```
-Open http://localhost:8000 (the script also prints a Wi-Fi URL for phones).
+
+**2. Run InfraSync AI**
+
+```bash
+docker run --rm -p 8000:8000 -v infrasync-data:/data ghcr.io/shaikaishashaik5-crypto/infrasync-ai:latest
+```
+
+**3. Open the application**
+
+Open your browser and visit:
+
+http://localhost:8000
+
+If port 8000 is already in use, run the application on port 8001 instead:
+
+```bash
+docker run --rm -p 8001:8000 -v infrasync-data:/data ghcr.io/shaikaishashaik5-crypto/infrasync-ai:latest
+```
+
+Then visit http://localhost:8001.
+
+### Demo Login
 
 | Role | Login | PIN |
 |---|---|---|
 | Manager | Site Manager | `admin123` |
 | Workers | Arjun, Priya, Rahul, Meera, Sanjay, Kavya, Imran, Anita | `1234` |
 
-Change PINs: `MANAGER_PIN=xxxx WORKER_PIN=yyyy ./run.sh`   ·   Change port: `PORT=80 ./run.sh`
+**Security:** These are demo credentials. Change the default PINs before deploying the application for real-world use.
 
-## Docker alternative
+### Updating to the Latest Version
+
+Whenever a new version is published to GitHub Container Registry, download it with:
+
 ```bash
-docker build -t infrasync . && docker run -d -p 8000:8000 -v infrasync-data:/data infrasync
+docker pull ghcr.io/shaikaishashaik5-crypto/infrasync-ai:latest
 ```
 
-## Features
-1. Dark glassmorphism UI with live charts, responsive on phone and desktop.
-2. Worker input (start, % progress, completed) appears on the manager dashboard in real time (WebSocket).
-3. New project wizard: pick type → all related work shown by field → assign each field/worker + dates → create.
-4. Delay flow: worker taps Finish → Completed or Delayed → picks cause, explains, adds photos → manager sees the AI-detected cause, days late and photo evidence (click to enlarge).
-5. Workers only see their own tasks — no project progress or other workers' data (enforced on the server).
+Stop any currently running container, then run the application again using the command above.
 
-Data: `data/infrasync.db` (SQLite) and `data/uploads/` (photos). Delete the `data` folder to reset to demo data.
+### Data Persistence
+
+The Docker volume `infrasync-data` stores application data under `/data` inside the container. Verify that your application is configured to use `/data` for its SQLite database and uploaded photos.
