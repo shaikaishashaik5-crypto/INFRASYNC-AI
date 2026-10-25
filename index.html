@@ -4,9 +4,334 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0a1016">
+<meta name="description" content="INFRASYNC AI — construction site coordination demo for hackathon evaluation.">
 <title>INFRASYNC AI — Site Command</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2367e0b1'/%3E%3Cpath d='M20 18h24M32 18v28M20 46h24' stroke='%23062018' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="/static/styles.css">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080d13;--panel:rgba(18,28,38,.78);--panel-solid:#101a24;--panel2:#162330;--line:rgba(120,160,185,.16);--line2:rgba(120,160,185,.28);
+  --text:#e9f1f5;--muted:#8ea3b1;--mint:#67e0b1;--mint2:#2cbf8a;--amber:#f5bc63;--red:#ff6f7b;--blue:#80adff;--purple:#d2a5ff;--cyan:#5fd3e8;
+  --radius:16px;--shadow:0 18px 50px rgba(0,0,0,.42);
+  --font:Inter,"SF Pro Display","Segoe UI",Roboto,"Helvetica Neue",Arial,system-ui,sans-serif;
+}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--text);font:14px/1.5 var(--font);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,p{margin:0}
+.bg-orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg-orbs i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.38;animation:float 22s ease-in-out infinite}
+.bg-orbs i:nth-child(1){width:520px;height:520px;background:#0f6b55;top:-160px;right:-80px}
+.bg-orbs i:nth-child(2){width:460px;height:460px;background:#1b3f86;bottom:-180px;left:-120px;animation-delay:-8s}
+.bg-orbs i:nth-child(3){width:300px;height:300px;background:#5a2f86;top:40%;left:45%;opacity:.18;animation-delay:-14s}
+@keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,30px)}}
+#app{position:relative;z-index:1;min-height:100vh}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#243543;border-radius:9px}
+
+/* ---------- login ---------- */
+.login{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login-card{width:min(980px,100%);display:grid;grid-template-columns:1.05fr 1fr;background:var(--panel);border:1px solid var(--line);border-radius:26px;overflow:hidden;box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+.login-hero{padding:44px;background:linear-gradient(155deg,rgba(103,224,177,.16),rgba(128,173,255,.08) 55%,transparent);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:20px}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-mark{width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,var(--mint),#3fb6d6);display:grid;place-items:center;color:#062018;font-weight:800;font-size:20px;box-shadow:0 0 40px rgba(103,224,177,.35)}
+.logo b{display:block;letter-spacing:1.5px;font-size:16px}.logo small{display:block;color:var(--muted);font-size:10px;letter-spacing:2.4px}
+.login-hero h1{font-size:34px;line-height:1.1;letter-spacing:-.8px;margin-top:10px}
+.login-hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--mint),var(--blue));-webkit-background-clip:text;background-clip:text;color:transparent}
+.login-hero p{color:var(--muted);max-width:420px}
+.feat{display:grid;gap:10px;margin-top:auto}
+.feat div{display:flex;gap:11px;align-items:center;color:#b7c8d2;font-size:13px}
+.feat span{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:rgba(103,224,177,.12);color:var(--mint)}
+.login-form{padding:36px 34px}
+.login-form h2{font-size:20px;margin-bottom:4px}.login-form>p{color:var(--muted);margin-bottom:18px}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;max-height:330px;overflow:auto;padding-right:4px}
+.role{border:1px solid var(--line);background:rgba(255,255,255,.025);border-radius:13px;padding:11px;display:flex;gap:10px;align-items:center;cursor:pointer;text-align:left;transition:.15s}
+.role:hover{border-color:var(--line2);transform:translateY(-1px)}
+.role.sel{border-color:var(--mint);background:rgba(103,224,177,.09);box-shadow:0 0 0 3px rgba(103,224,177,.08)}
+.role.manager{grid-column:1/-1}
+.role b{display:block;font-size:13px}.role small{color:var(--muted);font-size:11px}
+.avatar{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-weight:700;font-size:12px;color:#07121a;flex-shrink:0}
+.pin-row{display:flex;gap:10px;margin-top:16px}
+.field{display:grid;gap:6px;margin-bottom:12px}
+.field label{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:600}
+.inp,.sel-inp,textarea.inp{width:100%;background:rgba(5,10,15,.55);border:1px solid var(--line);border-radius:11px;padding:11px 13px;outline:none;transition:.15s}
+.inp:focus,.sel-inp:focus{border-color:var(--mint);box-shadow:0 0 0 3px rgba(103,224,177,.12)}
+.sel-inp option{background:#101a24}
+textarea.inp{resize:vertical;min-height:84px}
+.hint{font-size:12px;color:var(--muted)}
+.err{color:var(--red);font-size:12.5px;min-height:18px;margin-top:8px}
+
+/* ---------- buttons ---------- */
+.btn{border:1px solid var(--line2);background:rgba(255,255,255,.04);padding:10px 16px;border-radius:11px;cursor:pointer;font-weight:600;transition:.15s;display:inline-flex;gap:8px;align-items:center;justify-content:center;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.09)}
+.btn.primary{background:linear-gradient(135deg,var(--mint),#3cc7c0);color:#052018;border:0;box-shadow:0 8px 24px rgba(103,224,177,.22)}
+.btn.primary:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.btn.danger{background:rgba(255,111,123,.12);border-color:rgba(255,111,123,.4);color:#ffb0b6}
+.btn.warn{background:rgba(245,188,99,.13);border-color:rgba(245,188,99,.45);color:#ffd899}
+.btn.sm{padding:6px 11px;font-size:12px;border-radius:9px}
+.btn.big{padding:14px 20px;font-size:15px;border-radius:14px}
+.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+.icon-btn{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.03);cursor:pointer;display:grid;place-items:center}
+.icon-btn:hover{background:rgba(255,255,255,.08)}
+
+/* ---------- shell ---------- */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:256px;flex-shrink:0;padding:22px 14px;border-right:1px solid var(--line);background:rgba(7,12,18,.72);backdrop-filter:blur(16px);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px}
+.sidebar .logo{padding:2px 8px 22px}
+.nav-item{display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;color:#9db0bc;padding:12px;border-radius:11px;cursor:pointer;text-align:left;font-weight:500;transition:.15s;position:relative}
+.nav-item svg{width:19px;height:19px;flex-shrink:0}
+.nav-item:hover{background:rgba(255,255,255,.04);color:#fff}
+.nav-item.active{background:linear-gradient(90deg,rgba(103,224,177,.16),rgba(103,224,177,.03));color:var(--mint)}
+.nav-item.active::before{content:"";position:absolute;left:-14px;top:10px;bottom:10px;width:3px;border-radius:3px;background:var(--mint)}
+.badge{margin-left:auto;background:var(--red);color:#fff;border-radius:99px;font-size:11px;font-weight:700;padding:1px 8px;min-width:22px;text-align:center}
+.badge.zero{display:none}
+.side-bottom{margin-top:auto;display:grid;gap:10px}
+.profile{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.025)}
+.profile b{display:block;font-size:13px}.profile small{font-size:10px;letter-spacing:1.4px;color:var(--muted)}
+.main{flex:1;min-width:0;padding:26px 30px 40px;max-width:1500px}
+.topbar{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:22px;flex-wrap:wrap}
+.crumb{font-size:11px;letter-spacing:1.7px;color:var(--muted)}
+.topbar h1{font-size:28px;letter-spacing:-.6px;margin:4px 0 2px}
+.topbar p{color:var(--muted)}
+.top-actions{display:flex;gap:10px;align-items:center}
+.live-pill{display:flex;align-items:center;gap:8px;padding:8px 13px;border:1px solid var(--line);border-radius:99px;font-size:12px;color:#b8c9d3;background:rgba(255,255,255,.025)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 0 rgba(103,224,177,.6);animation:pulse 1.8s infinite}
+.dot.off{background:var(--red);animation:none}
+@keyframes pulse{70%{box-shadow:0 0 0 9px rgba(103,224,177,0)}100%{box-shadow:0 0 0 0 rgba(103,224,177,0)}}
+
+/* ---------- cards ---------- */
+.grid{display:grid;gap:16px}
+.g-kpi{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:16px}
+.g-3{grid-template-columns:1fr 1.15fr 1fr;margin-bottom:16px;align-items:start}
+.g-2{grid-template-columns:1.4fr 1fr;margin-bottom:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;backdrop-filter:blur(14px);box-shadow:0 8px 30px rgba(0,0,0,.18)}
+.card h3{font-size:14px;letter-spacing:.2px;display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.card h3 small{margin-left:auto;color:var(--muted);font-weight:400;font-size:12px}
+.kpi{position:relative;overflow:hidden;animation:rise .5s both}
+.kpi::after{content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:var(--c,var(--mint));opacity:.12;filter:blur(8px)}
+.kpi small{color:var(--muted);font-size:11px;letter-spacing:1.1px;text-transform:uppercase;font-weight:600}
+.kpi b{display:block;font-size:34px;letter-spacing:-1px;margin:6px 0 2px;color:var(--c,var(--text))}
+.kpi span{color:var(--muted);font-size:12px}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:600;border:1px solid transparent;white-space:nowrap}
+.chip.assigned{background:rgba(128,173,255,.12);color:var(--blue);border-color:rgba(128,173,255,.3)}
+.chip.in_progress{background:rgba(95,211,232,.12);color:var(--cyan);border-color:rgba(95,211,232,.3)}
+.chip.completed{background:rgba(103,224,177,.12);color:var(--mint);border-color:rgba(103,224,177,.3)}
+.chip.delayed,.chip.high{background:rgba(255,111,123,.13);color:#ff9aa3;border-color:rgba(255,111,123,.35)}
+.chip.medium,.chip.overdue{background:rgba(245,188,99,.13);color:var(--amber);border-color:rgba(245,188,99,.35)}
+.chip.low{background:rgba(128,173,255,.12);color:var(--blue);border-color:rgba(128,173,255,.3)}
+.chip.neutral{background:rgba(255,255,255,.05);color:#b8c9d3;border-color:var(--line)}
+.chip.ok{background:rgba(103,224,177,.12);color:var(--mint);border-color:rgba(103,224,177,.3)}
+.legend{display:grid;gap:8px;margin-top:14px}
+.legend div{display:flex;align-items:center;gap:9px;font-size:12.5px;color:#b8c9d3}
+.legend i{width:10px;height:10px;border-radius:3px}.legend b{margin-left:auto;color:var(--text)}
+.donut-wrap{display:flex;justify-content:center;position:relative}
+.donut-wrap .center{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.donut-wrap .center b{font-size:30px;letter-spacing:-1px}.donut-wrap .center small{color:var(--muted);font-size:11px}
+.hbar{display:grid;gap:5px;margin-bottom:12px}
+.hbar .row{display:flex;justify-content:space-between;font-size:12.5px;color:#c4d3dc}
+.track{height:8px;border-radius:8px;background:rgba(255,255,255,.07);overflow:hidden}
+.track i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,var(--c,var(--mint)),color-mix(in srgb,var(--c,var(--mint)) 60%,#fff));transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.empty{color:var(--muted);text-align:center;padding:28px 10px;font-size:13px}
+.empty svg{width:34px;height:34px;opacity:.5;margin-bottom:8px}
+
+/* lists */
+.list{display:grid;gap:9px}
+.item{display:flex;gap:12px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.02);cursor:pointer;transition:.15s;text-align:left;width:100%}
+.item:hover{border-color:var(--line2);background:rgba(255,255,255,.045);transform:translateX(2px)}
+.item .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex-shrink:0}
+.item .ic.red{background:rgba(255,111,123,.14);color:var(--red)}.item .ic.amber{background:rgba(245,188,99,.14);color:var(--amber)}
+.item b{display:block;font-size:13px}.item small{color:var(--muted);font-size:12px}
+.item .grow{flex:1;min-width:0}.item .grow *{overflow:hidden;text-overflow:ellipsis}
+.feed{display:grid;gap:0;max-height:430px;overflow:auto}
+.feed .ev{display:flex;gap:11px;padding:10px 2px;border-bottom:1px solid var(--line);animation:rise .4s both}
+.feed .ev:last-child{border:0}
+.feed .bubble{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;font-size:13px}
+.feed p{font-size:13px;color:#d3e0e8}.feed small{color:var(--muted);font-size:11.5px}
+.ring{position:relative;width:62px;height:62px;flex-shrink:0}
+.ring span{position:absolute;inset:0;display:grid;place-items:center;font-weight:700;font-size:13px}
+.proj-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.pcard{display:flex;gap:14px;align-items:center;cursor:pointer;transition:.15s}
+.pcard:hover{border-color:var(--line2);transform:translateY(-2px)}
+.pcard b{font-size:14.5px;display:block}.pcard small{color:var(--muted)}
+.mini{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+/* tables */
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-align:left;padding:11px 12px;background:rgba(255,255,255,.03);font-weight:600}
+td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:middle;font-size:13px}
+tr:hover td{background:rgba(255,255,255,.02)}
+td .sel-inp,td .inp{padding:7px 9px;font-size:12.5px}
+.prog-mini{display:flex;align-items:center;gap:8px;min-width:100px}.prog-mini .track{flex:1;height:6px}.prog-mini small{color:var(--muted);width:32px}
+.person{display:flex;align-items:center;gap:8px}.person .avatar{width:26px;height:26px;border-radius:8px;font-size:10px}
+
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:transparent;color:#a9bbc6;padding:7px 14px;border-radius:99px;cursor:pointer;font-weight:600;font-size:12.5px}
+.tab.on{background:rgba(103,224,177,.14);color:var(--mint);border-color:rgba(103,224,177,.4)}
+
+/* delay cards */
+.dcard{display:grid;grid-template-columns:150px 1fr auto;gap:16px;align-items:center;cursor:pointer;transition:.15s;margin-bottom:12px;animation:rise .4s both}
+.dcard:hover{border-color:var(--line2);transform:translateY(-2px)}
+.dcard.new{border-color:rgba(255,111,123,.4);box-shadow:0 0 0 3px rgba(255,111,123,.06)}
+.thumbs{display:grid;grid-template-columns:1fr 1fr;gap:4px;height:92px;border-radius:12px;overflow:hidden;background:#0b141c}
+.thumbs.one{grid-template-columns:1fr}
+.thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.thumbs .none{display:grid;place-items:center;color:var(--muted);font-size:12px;grid-column:1/-1}
+.dcard h4{margin:0 0 4px;font-size:15px}.dcard p{color:#b4c5cf;font-size:13px;margin:6px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:12px}
+.ai-badge{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:9px;background:linear-gradient(90deg,rgba(210,165,255,.16),rgba(128,173,255,.12));border:1px solid rgba(210,165,255,.35);color:#e3cbff;font-weight:600;font-size:12px}
+.conf{font-size:11px;color:var(--muted);text-align:right}
+.days-late{text-align:center;padding:10px 16px;border-radius:14px;background:rgba(255,111,123,.1);border:1px solid rgba(255,111,123,.3)}
+.days-late b{display:block;font-size:26px;color:#ff9aa3;letter-spacing:-1px;line-height:1}.days-late small{color:#ffb7bd;font-size:11px}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(2,6,10,.72);backdrop-filter:blur(6px);z-index:50;display:grid;place-items:center;padding:18px;animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.modal{width:min(720px,100%);max-height:94vh;overflow:auto;background:var(--panel-solid);border:1px solid var(--line2);border-radius:22px;box-shadow:var(--shadow);animation:pop .25s cubic-bezier(.2,.9,.3,1.2)}
+.modal.wide{width:min(1000px,100%)}
+@keyframes pop{from{opacity:0;transform:translateY(16px) scale(.97)}}
+.modal-head{display:flex;justify-content:space-between;gap:14px;padding:20px 22px 14px;position:sticky;top:0;background:var(--panel-solid);z-index:2;border-bottom:1px solid var(--line)}
+.modal-head h2{font-size:19px;letter-spacing:-.3px}.modal-head p{color:var(--muted);font-size:13px;margin-top:2px}
+.modal-body{padding:18px 22px}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;align-items:center;padding:14px 22px 20px;position:sticky;bottom:0;background:var(--panel-solid);border-top:1px solid var(--line);flex-wrap:wrap}
+.modal-foot .sp{margin-right:auto;color:var(--muted);font-size:12.5px}
+.ai-panel{border:1px solid rgba(210,165,255,.3);background:linear-gradient(135deg,rgba(210,165,255,.1),rgba(128,173,255,.06));border-radius:16px;padding:16px;margin-bottom:16px}
+.ai-panel h4{margin:0 0 8px;font-size:12px;letter-spacing:1.4px;color:#d9bcff;text-transform:uppercase}
+.ai-panel .big{font-size:17px;font-weight:700;margin-bottom:6px}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:6px 14px;font-size:13px;margin:12px 0}.kv dt{color:var(--muted)}.kv dd{margin:0}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:8px}
+.gallery img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;border:1px solid var(--line);cursor:zoom-in;transition:.15s;background:#0b141c}
+.gallery img:hover{transform:scale(1.03);border-color:var(--mint)}
+.lightbox{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.92);display:grid;place-items:center;padding:20px;animation:fade .15s}
+.lightbox[hidden]{display:none}
+.lightbox img{max-width:95vw;max-height:88vh;border-radius:12px;box-shadow:var(--shadow)}
+.lightbox .nav{position:absolute;top:50%;transform:translateY(-50%);font-size:34px;background:rgba(255,255,255,.1);border:0;color:#fff;width:50px;height:50px;border-radius:50%;cursor:pointer}
+.lightbox .prev{left:20px}.lightbox .next{right:20px}.lightbox .close{position:absolute;top:18px;right:20px;font-size:22px;background:rgba(255,255,255,.1);border:0;color:#fff;width:42px;height:42px;border-radius:50%;cursor:pointer}
+.lightbox small{position:absolute;bottom:18px;color:#bcd}
+
+/* wizard */
+.steps{display:flex;gap:8px;align-items:center;margin-top:12px}
+.step{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.step i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:700;border:1px solid var(--line2);font-size:12px}
+.step.on{color:var(--text)}.step.on i{background:var(--mint);color:#052018;border-color:var(--mint)}
+.step.done i{background:rgba(103,224,177,.2);color:var(--mint)}
+.step-sep{height:1px;width:34px;background:var(--line2)}
+.tmpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.tmpl{border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;background:rgba(255,255,255,.02);text-align:left;transition:.15s}
+.tmpl:hover{border-color:var(--line2)}
+.tmpl.sel{border-color:var(--mint);background:rgba(103,224,177,.09);box-shadow:0 0 0 3px rgba(103,224,177,.08)}
+.tmpl b{display:block;margin:6px 0 2px}.tmpl small{color:var(--muted)}
+.tmpl .emoji{font-size:24px}
+.trade-group{border:1px solid var(--line);border-radius:14px;margin-bottom:12px;overflow:hidden}
+.trade-head{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.035);font-weight:700}
+.trade-head .sp{margin-left:auto;display:flex;gap:8px;align-items:center;color:var(--muted);font-weight:500;font-size:12px}
+.wrow{display:grid;grid-template-columns:24px 1fr 170px 138px 64px;gap:10px;align-items:center;padding:9px 14px;border-top:1px solid var(--line)}
+.wrow.off{opacity:.42}
+.wrow b{font-size:13px;display:block}.wrow small{color:var(--muted);font-size:12px}
+.wrow input[type=checkbox]{width:18px;height:18px;accent-color:var(--mint)}
+.wrow .sel-inp,.wrow .inp{padding:7px 9px;font-size:12.5px}
+.dur{color:var(--muted);font-size:12px;text-align:right}
+.summary-bar{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.summary-bar .card{padding:10px 14px;flex:1;min-width:130px}
+.summary-bar b{font-size:20px;display:block}.summary-bar small{color:var(--muted)}
+
+/* ---------- worker ---------- */
+.worker-main{max-width:820px;margin:0 auto;padding:22px 16px 90px}
+.wtop{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}
+.whello h1{font-size:25px;letter-spacing:-.5px}.whello p{color:var(--muted)}
+.wstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.wstats .card{padding:14px;text-align:center}.wstats b{font-size:26px;display:block;letter-spacing:-1px}.wstats small{color:var(--muted);font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.tcard{margin-bottom:12px;animation:rise .4s both;position:relative;overflow:hidden}
+.tcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--st,var(--blue))}
+.tcard.assigned{--st:var(--blue)}.tcard.in_progress{--st:var(--cyan)}.tcard.completed{--st:var(--mint)}.tcard.delayed{--st:var(--red)}
+.tcard.overdue{--st:var(--amber)}
+.tcard h4{margin:0;font-size:16px;letter-spacing:-.2px}.tcard .desc{color:#a9bbc6;margin:6px 0 10px;font-size:13px}
+.tcard .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.tcard .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.tcard .actions .btn{flex:1;min-width:120px}
+.note-box{margin-top:10px;padding:10px 12px;border-radius:11px;background:rgba(255,111,123,.08);border:1px solid rgba(255,111,123,.25);font-size:12.5px;color:#ffc3c8}
+.range{width:100%;accent-color:var(--mint);height:6px}
+.range-val{font-size:44px;font-weight:800;letter-spacing:-2px;text-align:center;color:var(--mint)}
+.choice{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.choice button{padding:26px 14px;border-radius:18px;border:1px solid var(--line2);background:rgba(255,255,255,.03);cursor:pointer;display:grid;gap:6px;place-items:center;text-align:center;transition:.15s}
+.choice button:hover{transform:translateY(-3px)}
+.choice .ok:hover{border-color:var(--mint);background:rgba(103,224,177,.1)}.choice .late:hover{border-color:var(--red);background:rgba(255,111,123,.1)}
+.choice .em{font-size:38px}.choice b{font-size:16px}.choice small{color:var(--muted)}
+.cause-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.cause{padding:10px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02);cursor:pointer;text-align:center;font-size:12.5px;font-weight:600;transition:.15s}
+.cause.sel{border-color:var(--red);background:rgba(255,111,123,.12);color:#ffb7bd}
+.photo-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.previews{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.previews .pv{position:relative;aspect-ratio:1;border-radius:11px;overflow:hidden;border:1px solid var(--line2)}
+.previews img{width:100%;height:100%;object-fit:cover}
+.previews button{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.7);color:#fff;cursor:pointer;line-height:1}
+.drop-hint{border:1.5px dashed var(--line2);border-radius:13px;padding:18px;text-align:center;color:var(--muted);font-size:13px}
+.worker-nav{position:fixed;bottom:0;left:0;right:0;display:none}
+
+/* toasts */
+.toast-root{position:fixed;top:16px;right:16px;z-index:200;display:grid;gap:10px;width:min(380px,calc(100vw - 32px))}
+.toast{background:#13212d;border:1px solid var(--line2);border-left:4px solid var(--mint);border-radius:13px;padding:12px 14px;box-shadow:var(--shadow);animation:slide .3s cubic-bezier(.2,.9,.3,1.1);font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.toast.err{border-left-color:var(--red)}.toast.warn{border-left-color:var(--amber)}
+.toast b{display:block;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+@keyframes slide{from{opacity:0;transform:translateX(30px)}}
+
+footer.foot{margin-top:30px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+/* ---------- responsive ---------- */
+@media(max-width:1180px){.g-3{grid-template-columns:1fr 1fr}.g-3>:last-child{grid-column:1/-1}.g-2{grid-template-columns:1fr}}
+@media(max-width:900px){
+  .login-card{grid-template-columns:1fr}.login-hero{display:none}
+  .sidebar{position:fixed;bottom:0;top:auto;left:0;right:0;width:auto;height:auto;flex-direction:row;padding:6px;z-index:40;border-right:0;border-top:1px solid var(--line);background:rgba(7,12,18,.94);justify-content:space-around}
+  .sidebar .logo,.side-bottom{display:none}
+  .nav-item{flex-direction:column;gap:3px;font-size:10.5px;padding:8px 4px;flex:1;text-align:center;align-items:center}
+  .nav-item.active::before{display:none}.nav-item .badge{position:absolute;top:2px;right:18%;margin:0}
+  .main{padding:18px 14px 100px}.topbar h1{font-size:22px}
+  .g-3{grid-template-columns:1fr}.dcard{grid-template-columns:1fr}.thumbs{height:130px}.days-late{display:flex;gap:8px;align-items:baseline;justify-content:center}
+  .wrow{grid-template-columns:24px 1fr 1fr;}.wrow .dur{display:none}.wrow input[type=date]{grid-column:2/4}
+  .kv{grid-template-columns:1fr}
+}
+@media(max-width:520px){.choice{grid-template-columns:1fr}.role-grid{grid-template-columns:1fr}.login-form{padding:24px 18px}.modal-body{padding:16px}.live-pill span.t{display:none}}
+
+/* ---------- landing page ---------- */
+.land{max-width:1180px;margin:0 auto;padding:0 22px 40px}
+.land-nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 0}
+.land-nav nav{display:flex;gap:26px}.land-nav nav a{color:#b3c4ce;text-decoration:none;font-weight:600;font-size:14px}.land-nav nav a:hover{color:var(--mint)}
+.land-hero{display:grid;grid-template-columns:1.1fr 1fr;gap:44px;align-items:center;padding:56px 0 70px}
+.pill{display:inline-block;padding:6px 14px;border:1px solid rgba(103,224,177,.35);background:rgba(103,224,177,.09);color:var(--mint);border-radius:99px;font-size:12.5px;font-weight:600}
+.land-copy h1{font-size:clamp(34px,5vw,58px);line-height:1.04;letter-spacing:-1.8px;margin:18px 0}
+.land-copy h1 em{font-style:normal;background:linear-gradient(90deg,var(--mint),var(--blue));-webkit-background-clip:text;background-clip:text;color:transparent}
+.land-copy>p{color:var(--muted);font-size:17px;max-width:540px;line-height:1.6}
+.land-cta{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
+.land-stats{display:flex;gap:34px;margin-top:38px;flex-wrap:wrap}.land-stats b{display:block;font-size:28px;letter-spacing:-.8px}.land-stats small{color:var(--muted);font-size:12px}
+.land-mock{padding:18px;box-shadow:0 30px 80px rgba(0,0,0,.45),0 0 80px rgba(103,224,177,.08)}
+.mock-top{display:flex;align-items:center;gap:6px;margin-bottom:16px}.mock-top i{width:10px;height:10px;border-radius:50%;background:#2a3a48}.mock-top span{margin-left:10px;color:var(--muted);font-size:12px}
+.mock-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.mock-kpis div{border:1px solid var(--line);border-radius:13px;padding:12px;background:rgba(255,255,255,.025)}.mock-kpis small{color:var(--muted);font-size:10px;letter-spacing:1.4px}.mock-kpis b{display:block;font-size:28px}
+.mock-row{display:grid;grid-template-columns:78px 1fr 40px;gap:12px;align-items:center;margin:11px 0;font-size:13px;color:#b8c9d3}.mock-row b{text-align:right;color:var(--text)}
+.mock-alert{display:flex;gap:12px;align-items:center;margin-top:18px;padding:12px;border:1px solid rgba(255,111,123,.3);background:rgba(255,111,123,.07);border-radius:13px}
+.mock-alert small{display:block;color:var(--muted);font-size:12px}
+.land-sec{padding:50px 0;scroll-margin-top:10px}.land-sec h2{font-size:clamp(26px,3.4vw,38px);letter-spacing:-1px;text-align:center}
+.land-sec .sub{text-align:center;color:var(--muted);margin:8px 0 32px}
+.land-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.feat-card{padding:24px}.feat-card span{display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:rgba(103,224,177,.12);font-size:21px;margin-bottom:14px}
+.feat-card h3,.step-card h3{font-size:17px;margin-bottom:6px}.feat-card p,.step-card p{color:var(--muted);font-size:14px}
+.land-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.step-card{padding:26px}.step-card i{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--mint);color:#052018;font-style:normal;font-weight:800;margin-bottom:14px}
+.land-roles{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.land-roles .card{padding:26px}.land-roles h3{font-size:19px;margin-bottom:12px}
+.land-roles ul{list-style:none;display:grid;gap:9px}.land-roles li{color:#b8c9d3;padding-left:24px;position:relative}.land-roles li::before{content:"✓";position:absolute;left:0;color:var(--mint);font-weight:700}
+.land-final{text-align:center;padding:48px 20px;margin:30px 0;background:linear-gradient(155deg,rgba(103,224,177,.14),rgba(128,173,255,.07))}
+.land-final h2{font-size:30px;letter-spacing:-.8px}.land-final p{color:var(--muted);margin:8px 0 22px}
+.land-foot{text-align:center;color:var(--muted);font-size:12.5px;padding-top:16px}
+.back-link{background:none;border:0;color:var(--muted);cursor:pointer;font-weight:600;font-size:13px;padding:0;margin-bottom:14px}.back-link:hover{color:var(--mint)}
+@keyframes flashrow{0%,100%{background:transparent}25%,70%{background:rgba(245,188,99,.22)}}
+tr.flash td{animation:flashrow 3.5s ease}
+@media(max-width:860px){.land-hero{grid-template-columns:1fr;padding:30px 0 40px}.land-grid,.land-steps,.land-roles{grid-template-columns:1fr}.land-nav nav{display:none}}
+
+/* GitHub Pages demo note */
+.login-form .hint { margin: 8px 0 12px; line-height: 1.55; }
+
+</style>
 </head>
 <body>
 <div class="bg-orbs"><i></i><i></i><i></i></div>
@@ -14,6 +339,967 @@
 <div id="modalRoot"></div>
 <div id="lightbox" class="lightbox" hidden></div>
 <div id="toastRoot" class="toast-root"></div>
-<script src="/static/app.js"></script>
+<script>
+(() => {
+'use strict';
+/* ============================== helpers ============================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const initials = n => String(n || '?').split(' ').map(x => x[0]).join('').slice(0, 2).toUpperCase();
+const STATUS = { assigned: 'Assigned', in_progress: 'In progress', completed: 'Completed', delayed: 'Delayed' };
+const EMOJI = { 'Residential Building': '🏢', 'Road Construction': '🛣️', 'Commercial Fit-out': '🏬', 'Bridge Construction': '🌉', 'Solar Power Plant': '☀️', 'Water Pipeline': '🚰' };
+const CAUSE_ICON = { 'Material shortage': '📦', 'Bad weather': '🌧️', 'Labour shortage': '👷', 'Equipment failure': '🛠️', 'Design / scope change': '📐', 'Permit / inspection': '📝', 'Safety incident': '⛑️', 'Site access / utilities': '🚧', 'Other': '❔' };
+const PALETTE = ['#ff6f7b', '#f5bc63', '#80adff', '#d2a5ff', '#5fd3e8', '#67e0b1', '#ff9f7a', '#b6e36b', '#8ea3b1'];
+const ICON = {
+  grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>',
+  folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
+  team: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.9c1.8.8 2.8 2.4 3 5.1"/></svg>',
+  pulse: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>',
+  logout: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>',
+  inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/></svg>',
+};
+
+const S = {
+  token: null, me: null, data: null, templates: null, page: 'overview', ws: null, wsOk: false, skew: 0,
+  open: {}, delayTab: 'all', workerTab: 'active', renderPending: false, pageTitleSet: false,
+};
+const store = {
+  get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch { } },
+  del: k => { try { localStorage.removeItem(k); } catch { } },
+};
+
+/* GitHub Pages mode: browser-only demo API. No Python server or localhost needed. */
+const STATIC_DEMO = true;
+const STATIC_BASE_STATE = {"role":"manager","me":{"id":"manager","name":"Site Manager","role":"manager","trade":"Management","color":"#67e0b1"},"projects":[{"id":"PRJ-1001","name":"Northstar Heights","location":"Hyderabad, Telangana","template":"Residential Building","start_date":"2026-10-11","created_at":"2026-10-25T05:02:39"}],"tasks":[{"id":"T-100","project_id":"PRJ-1001","title":"Site survey & layout","trade":"Planning","description":"Survey site, mark boundaries and verify benchmarks","assignee":"worker8","start_date":"2026-10-11","due_date":"2026-10-13","duration_days":2,"status":"completed","progress":100,"started_at":"2026-10-11","completed_at":"2026-10-13","created_at":"2026-10-25T05:02:39","updated_at":"2026-10-25T05:02:39","is_overdue":false},{"id":"T-101","project_id":"PRJ-1001","title":"Safety setup & site induction","trade":"Safety","description":"Fence site, install signage, PPE induction for all crews","assignee":"worker6","start_date":"2026-10-13","due_date":"2026-10-14","duration_days":1,"status":"completed","progress":100,"started_at":"2026-10-13","completed_at":"2026-10-14","created_at":"2026-10-25T05:02:39","updated_at":"2026-10-25T05:02:39","is_overdue":false},{"id":"T-102","project_id":"PRJ-1001","title":"Excavation & earthwork","trade":"Civil","description":"Excavate foundations and document soil conditions","assignee":"worker1","start_date":"2026-10-14","due_date":"2026-10-19","duration_days":5,"status":"completed","progress":100,"started_at":"2026-10-14","completed_at":"2026-10-19","created_at":"2026-10-25T05:02:39","updated_at":"2026-10-25T05:02:39","is_overdue":false},{"id":"T-103","project_id":"PRJ-1001","title":"Foundation reinforcement","trade":"Structural","description":"Install reinforcement and request inspection","assignee":"worker5","start_date":"2026-10-19","due_date":"2026-10-24","duration_days":4,"status":"delayed","progress":55,"started_at":"2026-10-19","completed_at":null,"created_at":"2026-10-25T05:02:39","updated_at":"2026-10-25T05:02:39","is_overdue":true},{"id":"T-105","project_id":"PRJ-1001","title":"Column & slab formwork","trade":"Structural","description":"Install formwork and check dimensions","assignee":"worker5","start_date":"2026-10-23","due_date":"2026-10-25","duration_days":5,"status":"delayed","progress":30,"started_at":"2026-10-23","completed_at":null,"created_at":"2026-10-25T05:02:39","updated_at":"2026-10-25T05:02:39","is_overdue":false},{"id":"T-104","project_id":"PRJ-1001","title":"Concrete foundation pour","trade":"Civil","description":"Pour, level and cure foundation concrete","assignee":"worker1","start_date":"2026-10-22","due_date":"2026-10-26","duration_days":3,"status":"in_progress","progress":40,"started_at":"2026-10-22","completed_at":null,"created_at":"2026-10-25T05:02:39","updated_at":"2026-10-25T05:02:39","is_overdue":false},{"id":"T-106","project_id":"PRJ-1001","title":"Electrical conduit rough-in","trade":"Electrical","description":"Install concealed conduits before slab closure","assignee":"worker2","start_date":"2026-10-24","due_date":"2026-10-27","duration_days":3,"status":"in_progress","progress":65,"started_at":"2026-10-24","completed_at":null,"created_at":"2026-10-25T05:02:39","updated_at":"2026-10-25T05:02:39","is_overdue":false},{"id":"T-107","project_id":"PRJ-1001","title":"Plumbing rough-in","trade":"Plumbing","description":"Install sleeves and water/drainage lines","assignee":"worker3","start_date":"2026-10-26","due_date":"2026-10-29","duration_days":3,"status":"assigned","progress":0,"started_at":null,"completed_at":null,"created_at":"2026-10-25T05:02:39","updated_at":"2026-10-25T05:02:39","is_overdue":false},{"id":"T-108","project_id":"PRJ-1001","title":"Slab concrete pour","trade":"Civil","description":"Pour slab after all pre-pour checks are approved","assignee":"worker1","start_date":"2026-10-28","due_date":"2026-10-30","duration_days":2,"status":"assigned","progress":0,"started_at":null,"completed_at":null,"created_at":"2026-10-25T05:02:39","updated_at":"2026-10-25T05:02:39","is_overdue":false},{"id":"T-109","project_id":"PRJ-1001","title":"Masonry walls","trade":"Civil","description":"Build block/brick walls and record completed area","assignee":"worker1","start_date":"2026-10-29","due_date":"2026-11-04","duration_days":6,"status":"assigned","progress":0,"started_at":null,"completed_at":null,"created_at":"2026-10-25T05:02:39","updated_at":"2026-10-25T05:02:39","is_overdue":false}],"reports":[{"id":"R-DEMO02","task_id":"T-105","project_id":"PRJ-1001","worker_id":"worker5","kind":"delay","cause":"Bad weather","reason":"Heavy rain overnight flooded the formwork bay, cannot place formwork safely until it drains.","notes":"","delay_days":2,"photos":["data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27960%27%20height%3D%27640%27%20viewBox%3D%270%200%20960%20640%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27hsl%28205%2C45%25%2C22%25%29%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27hsl%28245%2C50%25%2C10%25%29%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%27960%27%20height%3D%27640%27%20fill%3D%27url%28%23g%29%27%2F%3E%3Cg%20opacity%3D%27.35%27%20fill%3D%27none%27%20stroke%3D%27hsl%28205%2C80%25%2C70%25%29%27%20stroke-width%3D%273%27%3E%3Cpath%20d%3D%27M0%20520%20L960%20470%27%2F%3E%3Cpath%20d%3D%27M120%20520%20V300%20L260%20220%20L400%20300%20V500%27%2F%3E%3Cpath%20d%3D%27M520%20480%20V260%20H760%20V470%27%2F%3E%3Ccircle%20cx%3D%27820%27%20cy%3D%27140%27%20r%3D%2760%27%2F%3E%3C%2Fg%3E%3Ctext%20x%3D%2748%27%20y%3D%2788%27%20fill%3D%27%23fff%27%20font-family%3D%27sans-serif%27%20font-size%3D%2740%27%20font-weight%3D%27700%27%3EWaterlogged%20formwork%20bay%3C%2Ftext%3E%3Ctext%20x%3D%2748%27%20y%3D%27136%27%20fill%3D%27%23cfe%27%20font-family%3D%27sans-serif%27%20font-size%3D%2724%27%3EHeavy%20overnight%20rain%20on%20site%3C%2Ftext%3E%3Ctext%20x%3D%2748%27%20y%3D%27600%27%20fill%3D%27%239ab%27%20font-family%3D%27sans-serif%27%20font-size%3D%2720%27%3EDEMO%20EVIDENCE%20PHOTO%20%28sample%20data%29%3C%2Ftext%3E%3C%2Fsvg%3E","data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27960%27%20height%3D%27640%27%20viewBox%3D%270%200%20960%20640%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27hsl%2845%2C45%25%2C22%25%29%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27hsl%2885%2C50%25%2C10%25%29%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%27960%27%20height%3D%27640%27%20fill%3D%27url%28%23g%29%27%2F%3E%3Cg%20opacity%3D%27.35%27%20fill%3D%27none%27%20stroke%3D%27hsl%2845%2C80%25%2C70%25%29%27%20stroke-width%3D%273%27%3E%3Cpath%20d%3D%27M0%20520%20L960%20470%27%2F%3E%3Cpath%20d%3D%27M120%20520%20V300%20L260%20220%20L400%20300%20V500%27%2F%3E%3Cpath%20d%3D%27M520%20480%20V260%20H760%20V470%27%2F%3E%3Ccircle%20cx%3D%27820%27%20cy%3D%27140%27%20r%3D%2760%27%2F%3E%3C%2Fg%3E%3Ctext%20x%3D%2748%27%20y%3D%2788%27%20fill%3D%27%23fff%27%20font-family%3D%27sans-serif%27%20font-size%3D%2740%27%20font-weight%3D%27700%27%3ECrane%20out%20of%20service%3C%2Ftext%3E%3Ctext%20x%3D%2748%27%20y%3D%27136%27%20fill%3D%27%23cfe%27%20font-family%3D%27sans-serif%27%20font-size%3D%2724%27%3EHydraulic%20fault%20-%20awaiting%20mechanic%3C%2Ftext%3E%3Ctext%20x%3D%2748%27%20y%3D%27600%27%20fill%3D%27%239ab%27%20font-family%3D%27sans-serif%27%20font-size%3D%2720%27%3EDEMO%20EVIDENCE%20PHOTO%20%28sample%20data%29%3C%2Ftext%3E%3C%2Fsvg%3E"],"ai_cause":"Bad weather","ai_confidence":0.9,"ai_action":"Re-sequence indoor/sheltered work and add weather buffer to dependent tasks.","ai_keywords":["rain","flood"],"severity":"medium","reviewed":0,"manager_note":"","created_at":"2026-10-25T05:02:39"},{"id":"R-DEMO01","task_id":"T-103","project_id":"PRJ-1001","worker_id":"worker5","kind":"delay","cause":"Material shortage","reason":"Steel supplier delivered only 60% of the rebar. Truck with remaining stock not arrived yet.","notes":"","delay_days":3,"photos":["data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27960%27%20height%3D%27640%27%20viewBox%3D%270%200%20960%20640%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27hsl%2820%2C45%25%2C22%25%29%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27hsl%2860%2C50%25%2C10%25%29%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%27960%27%20height%3D%27640%27%20fill%3D%27url%28%23g%29%27%2F%3E%3Cg%20opacity%3D%27.35%27%20fill%3D%27none%27%20stroke%3D%27hsl%2820%2C80%25%2C70%25%29%27%20stroke-width%3D%273%27%3E%3Cpath%20d%3D%27M0%20520%20L960%20470%27%2F%3E%3Cpath%20d%3D%27M120%20520%20V300%20L260%20220%20L400%20300%20V500%27%2F%3E%3Cpath%20d%3D%27M520%20480%20V260%20H760%20V470%27%2F%3E%3Ccircle%20cx%3D%27820%27%20cy%3D%27140%27%20r%3D%2760%27%2F%3E%3C%2Fg%3E%3Ctext%20x%3D%2748%27%20y%3D%2788%27%20fill%3D%27%23fff%27%20font-family%3D%27sans-serif%27%20font-size%3D%2740%27%20font-weight%3D%27700%27%3ERebar%20delivery%20short%3C%2Ftext%3E%3Ctext%20x%3D%2748%27%20y%3D%27136%27%20fill%3D%27%23cfe%27%20font-family%3D%27sans-serif%27%20font-size%3D%2724%27%3EFoundation%20reinforcement%20-%2040%25%20steel%20missing%3C%2Ftext%3E%3Ctext%20x%3D%2748%27%20y%3D%27600%27%20fill%3D%27%239ab%27%20font-family%3D%27sans-serif%27%20font-size%3D%2720%27%3EDEMO%20EVIDENCE%20PHOTO%20%28sample%20data%29%3C%2Ftext%3E%3C%2Fsvg%3E"],"ai_cause":"Material shortage","ai_confidence":0.97,"ai_action":"Escalate to procurement, confirm supplier ETA and consider an alternate vendor.","ai_keywords":["steel","supplier","delivered","stock","rebar","not arrived","truck"],"severity":"medium","reviewed":0,"manager_note":"","created_at":"2026-10-25T05:02:39"}],"updates":[{"id":1,"task_id":"T-106","project_id":"PRJ-1001","worker_id":"worker2","progress":65,"note":"Conduits done in blocks A and B, block C tomorrow.","created_at":"2026-10-25T05:02:39"}],"activity":[{"id":7,"kind":"progress","message":"Electrical conduit rough-in at 65% - Conduits done in blocks A and B","project_id":"PRJ-1001","task_id":"T-106","worker_id":"worker2","actor":"worker2","created_at":"2026-10-25T05:02:39"},{"id":6,"kind":"completed","message":"Excavation & earthwork completed by Arjun Kumar","project_id":"PRJ-1001","task_id":"T-102","worker_id":"worker1","actor":"worker1","created_at":"2026-10-25T05:02:39"},{"id":5,"kind":"completed","message":"Safety setup & site induction completed by Kavya Nair","project_id":"PRJ-1001","task_id":"T-101","worker_id":"worker6","actor":"worker6","created_at":"2026-10-25T05:02:39"},{"id":4,"kind":"completed","message":"Site survey & layout completed by Anita Rao","project_id":"PRJ-1001","task_id":"T-100","worker_id":"worker8","actor":"worker8","created_at":"2026-10-25T05:02:39"},{"id":3,"kind":"delay","message":"Column & slab formwork delayed 2d - Bad weather (reported by Sanjay Verma)","project_id":"PRJ-1001","task_id":"T-105","worker_id":"worker5","actor":"worker5","created_at":"2026-10-25T05:02:39"},{"id":2,"kind":"delay","message":"Foundation reinforcement delayed 3d - Material shortage (reported by Sanjay Verma)","project_id":"PRJ-1001","task_id":"T-103","worker_id":"worker5","actor":"worker5","created_at":"2026-10-25T05:02:39"},{"id":1,"kind":"project","message":"Project Northstar Heights created from Residential Building template","project_id":"PRJ-1001","task_id":null,"worker_id":null,"actor":"manager","created_at":"2026-10-25T05:02:39"}],"workers":[{"id":"worker1","name":"Arjun Kumar","trade":"Civil","color":"#57d9a3","role":"worker"},{"id":"worker2","name":"Priya Sharma","trade":"Electrical","color":"#79a8ff","role":"worker"},{"id":"worker3","name":"Rahul Reddy","trade":"Plumbing","color":"#f6bd60","role":"worker"},{"id":"worker4","name":"Meera Das","trade":"Finishing","color":"#d7a7ff","role":"worker"},{"id":"worker5","name":"Sanjay Verma","trade":"Structural","color":"#ff9f7a","role":"worker"},{"id":"worker6","name":"Kavya Nair","trade":"Safety","color":"#ff7b86","role":"worker"},{"id":"worker7","name":"Imran Sheikh","trade":"Mechanical","color":"#5fd3e8","role":"worker"},{"id":"worker8","name":"Anita Rao","trade":"Planning","color":"#b6e36b","role":"worker"}],"today":"2026-10-25","server_time":"2026-10-25T05:03:24"};
+const STATIC_TEMPLATES = {"trades":["Planning","Civil","Structural","Electrical","Plumbing","Mechanical","Finishing","Safety","Quality"],"trade_owner":{"Civil":"worker1","Electrical":"worker2","Plumbing":"worker3","Finishing":"worker4","Structural":"worker5","Safety":"worker6","Quality":"worker6","Mechanical":"worker7","Planning":"worker8"},"causes":["Material shortage","Bad weather","Labour shortage","Equipment failure","Design / scope change","Permit / inspection","Safety incident","Site access / utilities","Other"],"templates":{"Residential Building":[{"index":0,"title":"Site survey & layout","trade":"Planning","description":"Survey site, mark boundaries and verify benchmarks","duration_days":2},{"index":1,"title":"Safety setup & site induction","trade":"Safety","description":"Fence site, install signage, PPE induction for all crews","duration_days":1},{"index":2,"title":"Excavation & earthwork","trade":"Civil","description":"Excavate foundations and document soil conditions","duration_days":5},{"index":3,"title":"Foundation reinforcement","trade":"Structural","description":"Install reinforcement and request inspection","duration_days":4},{"index":4,"title":"Concrete foundation pour","trade":"Civil","description":"Pour, level and cure foundation concrete","duration_days":3},{"index":5,"title":"Column & slab formwork","trade":"Structural","description":"Install formwork and check dimensions","duration_days":5},{"index":6,"title":"Electrical conduit rough-in","trade":"Electrical","description":"Install concealed conduits before slab closure","duration_days":3},{"index":7,"title":"Plumbing rough-in","trade":"Plumbing","description":"Install sleeves and water/drainage lines","duration_days":3},{"index":8,"title":"Slab concrete pour","trade":"Civil","description":"Pour slab after all pre-pour checks are approved","duration_days":2},{"index":9,"title":"Masonry walls","trade":"Civil","description":"Build block/brick walls and record completed area","duration_days":6},{"index":10,"title":"Electrical wiring","trade":"Electrical","description":"Pull wires and test circuits","duration_days":4},{"index":11,"title":"Plastering","trade":"Finishing","description":"Apply internal and external plaster","duration_days":5},{"index":12,"title":"Waterproofing","trade":"Civil","description":"Apply waterproofing and perform pond test","duration_days":3},{"index":13,"title":"Flooring & finishes","trade":"Finishing","description":"Install floor finish and inspect quality","duration_days":6},{"index":14,"title":"Final safety & quality inspection","trade":"Quality","description":"Close punch-list and submit final evidence","duration_days":2}],"Road Construction":[{"index":0,"title":"Survey & traffic plan","trade":"Planning","description":"Survey alignment and set traffic controls","duration_days":2},{"index":1,"title":"Site safety & barricading","trade":"Safety","description":"Install barricades, signage and traffic marshals","duration_days":1},{"index":2,"title":"Clearance & excavation","trade":"Civil","description":"Clear right-of-way and excavate formation","duration_days":5},{"index":3,"title":"Subgrade preparation","trade":"Civil","description":"Compact subgrade and record density test","duration_days":3},{"index":4,"title":"Drainage installation","trade":"Civil","description":"Install culverts and roadside drains","duration_days":4},{"index":5,"title":"Utility ducts & street lighting","trade":"Electrical","description":"Lay cable ducts and street light foundations","duration_days":4},{"index":6,"title":"Granular sub-base","trade":"Civil","description":"Spread and compact granular sub-base","duration_days":3},{"index":7,"title":"Wet mix macadam","trade":"Civil","description":"Lay and compact base course","duration_days":3},{"index":8,"title":"Prime coat","trade":"Civil","description":"Apply prime coat and document weather conditions","duration_days":1},{"index":9,"title":"Asphalt paving","trade":"Mechanical","description":"Lay asphalt and record temperature/compaction","duration_days":4},{"index":10,"title":"Road markings & signage","trade":"Safety","description":"Install markings, signs and safety barriers","duration_days":2},{"index":11,"title":"Final quality inspection","trade":"Quality","description":"Submit test results and completion photos","duration_days":2}],"Commercial Fit-out":[{"index":0,"title":"Site measurements & protection","trade":"Planning","description":"Verify dimensions and protect existing areas","duration_days":2},{"index":1,"title":"Partition framing","trade":"Finishing","description":"Install partition framing and coordinate services","duration_days":3},{"index":2,"title":"Electrical first fix","trade":"Electrical","description":"Install conduits, boxes and cable trays","duration_days":3},{"index":3,"title":"Plumbing first fix","trade":"Plumbing","description":"Install supply and waste lines","duration_days":3},{"index":4,"title":"HVAC ducting","trade":"Mechanical","description":"Install ducting and equipment openings","duration_days":4},{"index":5,"title":"Fire & safety systems","trade":"Safety","description":"Install sprinklers, alarms and emergency lighting","duration_days":3},{"index":6,"title":"Boarding & ceiling closure","trade":"Finishing","description":"Close walls/ceilings after services inspection","duration_days":3},{"index":7,"title":"Painting","trade":"Finishing","description":"Prepare surfaces and apply paint system","duration_days":4},{"index":8,"title":"Fixtures & fittings","trade":"Finishing","description":"Install fixtures and test functionality","duration_days":3},{"index":9,"title":"Testing & commissioning","trade":"Quality","description":"Test systems and record results","duration_days":2},{"index":10,"title":"Client handover","trade":"Planning","description":"Complete snag list and handover documents","duration_days":1}],"Bridge Construction":[{"index":0,"title":"Geotechnical survey","trade":"Planning","description":"Soil investigation and alignment survey","duration_days":4},{"index":1,"title":"Safety & marine/traffic plan","trade":"Safety","description":"Establish safe work zones and emergency plan","duration_days":2},{"index":2,"title":"Pile foundation boring","trade":"Civil","description":"Bore piles and record depth logs","duration_days":10},{"index":3,"title":"Pile cap reinforcement","trade":"Structural","description":"Fix rebar cages for pile caps","duration_days":5},{"index":4,"title":"Pier construction","trade":"Civil","description":"Cast piers with formwork and curing","duration_days":12},{"index":5,"title":"Girder fabrication","trade":"Structural","description":"Fabricate and test precast girders","duration_days":14},{"index":6,"title":"Girder launching","trade":"Mechanical","description":"Crane/launcher erection of girders","duration_days":6},{"index":7,"title":"Deck slab casting","trade":"Civil","description":"Cast deck slab and cure","duration_days":8},{"index":8,"title":"Bearings & expansion joints","trade":"Structural","description":"Install bearings and joints","duration_days":3},{"index":9,"title":"Lighting & utilities","trade":"Electrical","description":"Install bridge lighting and conduits","duration_days":4},{"index":10,"title":"Wearing coat & railings","trade":"Finishing","description":"Asphalt wearing coat and railings","duration_days":5},{"index":11,"title":"Load test & handover","trade":"Quality","description":"Perform load test and submit report","duration_days":3}],"Solar Power Plant":[{"index":0,"title":"Land survey & grading","trade":"Planning","description":"Topographic survey and land grading plan","duration_days":4},{"index":1,"title":"Site safety & fencing","trade":"Safety","description":"Perimeter fencing, signage and safety induction","duration_days":2},{"index":2,"title":"Piling & foundations","trade":"Civil","description":"Install mounting structure foundations","duration_days":8},{"index":3,"title":"Mounting structure erection","trade":"Structural","description":"Assemble and align module mounting tables","duration_days":8},{"index":4,"title":"Module installation","trade":"Electrical","description":"Install PV modules and string cabling","duration_days":10},{"index":5,"title":"Inverter & transformer yard","trade":"Electrical","description":"Install inverters, transformer and switchgear","duration_days":6},{"index":6,"title":"Cable trenching & laying","trade":"Civil","description":"Excavate trenches and lay DC/AC cables","duration_days":7},{"index":7,"title":"SCADA & monitoring","trade":"Mechanical","description":"Install weather stations and SCADA","duration_days":4},{"index":8,"title":"Earthing & lightning protection","trade":"Safety","description":"Earth pits and lightning arrestors","duration_days":3},{"index":9,"title":"Testing & grid synchronisation","trade":"Quality","description":"IV curve tests, protection tests and grid sync","duration_days":4}],"Water Pipeline":[{"index":0,"title":"Route survey & permits","trade":"Planning","description":"Survey route and secure right-of-way permits","duration_days":4},{"index":1,"title":"Safety & traffic management","trade":"Safety","description":"Trench safety plan and traffic diversions","duration_days":2},{"index":2,"title":"Trench excavation","trade":"Civil","description":"Excavate trench to grade","duration_days":8},{"index":3,"title":"Pipe laying & jointing","trade":"Plumbing","description":"Lay, align and joint pipes","duration_days":10},{"index":4,"title":"Valve chambers","trade":"Civil","description":"Construct valve and air-release chambers","duration_days":5},{"index":5,"title":"Pump station mechanical","trade":"Mechanical","description":"Install pumps, motors and manifolds","duration_days":6},{"index":6,"title":"Pump station electrical","trade":"Electrical","description":"Install panels, cabling and controls","duration_days":5},{"index":7,"title":"Hydrostatic pressure test","trade":"Quality","description":"Pressure test sections and record results","duration_days":3},{"index":8,"title":"Backfill & road restoration","trade":"Civil","description":"Backfill, compact and reinstate surface","duration_days":6},{"index":9,"title":"Disinfection & commissioning","trade":"Quality","description":"Flush, disinfect and commission line","duration_days":2}]}};
+const STATIC_LOGIN_OPTIONS = {"manager":{"id":"manager","name":"Site Manager","role":"manager","trade":"Management","color":"#67e0b1"},"workers":[{"id":"worker1","name":"Arjun Kumar","trade":"Civil","color":"#57d9a3","role":"worker"},{"id":"worker2","name":"Priya Sharma","trade":"Electrical","color":"#79a8ff","role":"worker"},{"id":"worker3","name":"Rahul Reddy","trade":"Plumbing","color":"#f6bd60","role":"worker"},{"id":"worker4","name":"Meera Das","trade":"Finishing","color":"#d7a7ff","role":"worker"},{"id":"worker5","name":"Sanjay Verma","trade":"Structural","color":"#ff9f7a","role":"worker"},{"id":"worker6","name":"Kavya Nair","trade":"Safety","color":"#ff7b86","role":"worker"},{"id":"worker7","name":"Imran Sheikh","trade":"Mechanical","color":"#5fd3e8","role":"worker"},{"id":"worker8","name":"Anita Rao","trade":"Planning","color":"#b6e36b","role":"worker"}]};
+const STATIC_DB_KEY = 'infrasync_ai_github_pages_demo_v1';
+let STATIC_MEMORY_DB = null;
+const staticClone = value => JSON.parse(JSON.stringify(value));
+const staticNow = () => new Date().toISOString().slice(0, 19);
+const staticToday = () => new Date().toISOString().slice(0, 10);
+function staticShiftDate(value, delta) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const d = new Date(value + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0, 10);
+}
+function staticSeed() {
+  const db = staticClone(STATIC_BASE_STATE);
+  const original = new Date((db.today || staticToday()) + 'T12:00:00Z');
+  const current = new Date(staticToday() + 'T12:00:00Z');
+  const delta = Math.round((current - original) / 86400000);
+  db.projects.forEach(p => { p.start_date = staticShiftDate(p.start_date, delta); p.created_at = staticNow(); });
+  db.tasks.forEach(t => {
+    ['start_date', 'due_date', 'started_at', 'completed_at'].forEach(k => { t[k] = staticShiftDate(t[k], delta); });
+    t.created_at = staticNow(); t.updated_at = staticNow();
+  });
+  db.reports.forEach(r => { r.created_at = staticNow(); });
+  db.activity.forEach(a => { a.created_at = staticNow(); });
+  db.updates.forEach(u => { u.created_at = staticNow(); });
+  db.today = staticToday(); db.server_time = staticNow();
+  return db;
+}
+function staticReadDb() {
+  try {
+    const saved = localStorage.getItem(STATIC_DB_KEY);
+    if (saved) { STATIC_MEMORY_DB = JSON.parse(saved); return STATIC_MEMORY_DB; }
+  } catch (_) {}
+  if (!STATIC_MEMORY_DB) STATIC_MEMORY_DB = staticSeed();
+  staticWriteDb(STATIC_MEMORY_DB);
+  return STATIC_MEMORY_DB;
+}
+function staticWriteDb(db) {
+  STATIC_MEMORY_DB = db;
+  try { localStorage.setItem(STATIC_DB_KEY, JSON.stringify(db)); } catch (_) { /* in-memory fallback if storage quota is reached */ }
+}
+function staticUserFromToken() {
+  const token = S.token || '';
+  const uid = token.startsWith('demo.') ? token.slice(5) : '';
+  if (uid === 'manager') return STATIC_LOGIN_OPTIONS.manager;
+  return STATIC_LOGIN_OPTIONS.workers.find(w => w.id === uid) || null;
+}
+function staticRequireUser(role) {
+  const user = staticUserFromToken();
+  if (!user) throw new Error('Please sign in again');
+  if (role && user.role !== role) throw new Error(role === 'manager' ? 'Managers only' : 'Workers only');
+  return user;
+}
+function staticTask(db, id) {
+  const t = db.tasks.find(x => x.id === id);
+  if (!t) throw new Error('Task not found');
+  return t;
+}
+function staticLog(db, kind, message, projectId, taskId, workerId, actor) {
+  const max = Math.max(0, ...db.activity.map(x => Number(x.id) || 0));
+  db.activity.unshift({id: max + 1, kind, message, project_id: projectId || null, task_id: taskId || null,
+    worker_id: workerId || null, actor: actor || null, created_at: staticNow()});
+}
+function staticTaskId() { return 'T-' + Math.random().toString(36).slice(2, 9).toUpperCase(); }
+function staticReportId() { return 'R-' + Math.random().toString(36).slice(2, 10).toUpperCase(); }
+function staticStateFor(db, user) {
+  const out = staticClone(db);
+  out.role = user.role; out.me = staticClone(user); out.today = staticToday(); out.server_time = staticNow();
+  if (user.role === 'manager') {
+    out.workers = staticClone(STATIC_LOGIN_OPTIONS.workers);
+  } else {
+    out.tasks = out.tasks.filter(t => t.assignee === user.id);
+    const pids = new Set(out.tasks.map(t => t.project_id));
+    out.projects = out.projects.filter(p => pids.has(p.id)).map(({id,name,location}) => ({id,name,location}));
+    out.reports = out.reports.filter(r => r.worker_id === user.id).map(r => ({...r, ai_action: r.kind === 'delay' ? r.ai_action : undefined}));
+    out.updates = []; out.activity = []; out.workers = [staticClone(user)];
+  }
+  out.tasks.forEach(t => { t.is_overdue = Boolean(t.due_date && t.due_date < out.today && t.status !== 'completed'); });
+  return out;
+}
+function staticAddTask(db, projectId, t, startDate) {
+  if (!STATIC_TEMPLATES.trades.includes(t.trade)) throw new Error('Choose a valid field/trade');
+  if (!STATIC_LOGIN_OPTIONS.workers.some(w => w.id === t.assignee)) throw new Error("Choose a valid worker for '" + (t.title || 'this task') + "'");
+  if (!String(t.title || '').trim()) throw new Error('Work title is required');
+  const now = staticNow();
+  const item = {id: staticTaskId(), project_id: projectId, title: String(t.title).trim(), trade: t.trade,
+    description: t.description || '', assignee: t.assignee, start_date: t.start_date || startDate || staticToday(),
+    due_date: t.due_date || staticToday(), duration_days: Number(t.duration_days) || 1, status: 'assigned', progress: 0,
+    started_at: null, completed_at: null, created_at: now, updated_at: now, is_overdue: false};
+  db.tasks.push(item); return item;
+}
+function staticAnalyze(cause, reason, days) {
+  const rules = {
+    'Material shortage': ['material','cement','steel','sand','supply','supplier','delivery','stock','rebar','brick','pipe','cable'],
+    'Bad weather': ['rain','weather','storm','flood','wind'], 'Labour shortage': ['labour','worker','crew','staff'],
+    'Equipment failure': ['machine','equipment','crane','hydraulic','fault','broken'],
+    'Design / scope change': ['design','drawing','scope','revision'], 'Permit / inspection': ['permit','inspection','approval'],
+    'Safety incident': ['safety','incident','injury','accident'], 'Site access / utilities': ['access','utility','road','blocked']
+  };
+  const text = String(reason || '').toLowerCase();
+  const keys = (rules[cause] || []).filter(w => text.includes(w));
+  const action = {
+    'Material shortage':'Escalate to procurement, confirm supplier ETA and consider an alternate vendor.',
+    'Bad weather':'Re-sequence indoor/sheltered work and add weather buffer to dependent tasks.',
+    'Labour shortage':'Review crew availability, rebalance work and confirm the next shift plan.',
+    'Equipment failure':'Arrange maintenance, confirm repair time and check for substitute equipment.',
+    'Design / scope change':'Confirm the latest approved drawing and document the scope change.',
+    'Permit / inspection':'Contact the approving authority and schedule the earliest inspection.',
+    'Safety incident':'Stop affected work, secure the area and follow site safety reporting procedures.',
+    'Site access / utilities':'Coordinate access or utility clearance with the responsible site team.',
+    'Other':'Call the worker to clarify the cause and agree a recovery plan.'
+  };
+  return {ai_cause:cause || 'Other', ai_confidence:Math.min(.97, .72 + keys.length*.04), ai_action:action[cause] || action.Other,
+    ai_keywords:keys, severity:Number(days)>=5?'high':Number(days)>=2?'medium':'low'};
+}
+async function staticPhotoData(file) {
+  if (!(file instanceof Blob) || !file.size) return null;
+  try {
+    if (typeof createImageBitmap === 'function') {
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, 900 / Math.max(bmp.width, bmp.height));
+      const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(bmp.width * scale)); canvas.height = Math.max(1, Math.round(bmp.height * scale));
+      canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height); bmp.close?.();
+      return canvas.toDataURL('image/jpeg', .56);
+    }
+    return await new Promise(resolve => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => resolve(null); r.readAsDataURL(file); });
+  } catch (_) { return null; }
+}
+async function staticApi(url, opts = {}) {
+  const method = (opts.method || 'GET').toUpperCase();
+  const path = url.split('?')[0];
+  const payload = opts.json || {};
+  if (path === '/api/login-options' && method === 'GET') return staticClone(STATIC_LOGIN_OPTIONS);
+  if (path === '/api/login' && method === 'POST') {
+    const uid = payload.user_id, pin = String(payload.pin || '');
+    const user = uid === 'manager' ? STATIC_LOGIN_OPTIONS.manager : STATIC_LOGIN_OPTIONS.workers.find(w => w.id === uid);
+    const valid = !!user && (uid === 'manager' ? pin === 'admin123' : pin === '1234');
+    if (!valid) throw new Error('Wrong PIN');
+    return {token: 'demo.' + uid, user: staticClone(user)};
+  }
+  if (path === '/api/health' && method === 'GET') return {ok:true, time:staticNow(), mode:'static-demo'};
+  const user = staticRequireUser();
+  let db = staticReadDb();
+  if (path === '/api/state' && method === 'GET') return staticStateFor(db, user);
+  if (path === '/api/templates' && method === 'GET') { staticRequireUser('manager'); return staticClone(STATIC_TEMPLATES); }
+
+  if (path === '/api/projects' && method === 'POST') {
+    staticRequireUser('manager');
+    const name = String(payload.name || '').trim();
+    if (!name) throw new Error('Project name is required');
+    if (!Array.isArray(payload.tasks) || !payload.tasks.length) throw new Error('Select at least one work package');
+    const projectId = 'PRJ-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+    const p = {id:projectId, name, location:String(payload.location || '').trim(), template:payload.template || 'Custom',
+      start_date:payload.start_date || staticToday(), created_at:staticNow()};
+    db.projects.unshift(p);
+    payload.tasks.forEach(t => staticAddTask(db, projectId, t, p.start_date));
+    staticLog(db, 'project', `Project ${name} created with ${payload.tasks.length} work packages`, projectId, null, null, 'manager');
+    staticWriteDb(db); return {ok:true, id:projectId, task_count:payload.tasks.length};
+  }
+  let match = path.match(/^\/api\/projects\/([^/]+)$/);
+  if (match && method === 'DELETE') {
+    staticRequireUser('manager'); const id = decodeURIComponent(match[1]);
+    db.projects = db.projects.filter(p => p.id !== id); const tids = new Set(db.tasks.filter(t => t.project_id === id).map(t => t.id));
+    db.tasks = db.tasks.filter(t => t.project_id !== id); db.reports = db.reports.filter(r => r.project_id !== id);
+    db.updates = db.updates.filter(u => u.project_id !== id); db.activity = db.activity.filter(a => a.project_id !== id);
+    staticWriteDb(db); return {ok:true};
+  }
+  match = path.match(/^\/api\/projects\/([^/]+)\/tasks$/);
+  if (match && method === 'POST') {
+    staticRequireUser('manager'); const pid = decodeURIComponent(match[1]);
+    const p = db.projects.find(x => x.id === pid); if (!p) throw new Error('Project not found');
+    const t = staticAddTask(db, pid, payload, p.start_date);
+    staticLog(db, 'assign', `New work '${t.title}' added and assigned`, pid, t.id, t.assignee, 'manager');
+    staticWriteDb(db); return {ok:true, id:t.id};
+  }
+  match = path.match(/^\/api\/tasks\/([^/]+)\/assign$/);
+  if (match && method === 'PATCH') {
+    staticRequireUser('manager'); const t = staticTask(db, decodeURIComponent(match[1]));
+    if (payload.assignee) { if (!STATIC_LOGIN_OPTIONS.workers.some(w => w.id === payload.assignee)) throw new Error('Choose a valid worker'); t.assignee = payload.assignee; }
+    if (payload.due_date) t.due_date = payload.due_date;
+    t.updated_at = staticNow(); staticLog(db, 'assign', `'${t.title}' assignment or due date updated`, t.project_id, t.id, t.assignee, 'manager');
+    staticWriteDb(db); return {ok:true};
+  }
+  match = path.match(/^\/api\/tasks\/([^/]+)\/reopen$/);
+  if (match && method === 'POST') {
+    staticRequireUser('manager'); const t = staticTask(db, decodeURIComponent(match[1]));
+    t.status = t.progress ? 'in_progress' : 'assigned'; t.completed_at = null; t.updated_at = staticNow();
+    staticLog(db, 'reopen', `'${t.title}' reopened by manager`, t.project_id, t.id, t.assignee, 'manager');
+    staticWriteDb(db); return {ok:true};
+  }
+  match = path.match(/^\/api\/reports\/([^/]+)\/review$/);
+  if (match && method === 'POST') {
+    staticRequireUser('manager'); const id = decodeURIComponent(match[1]);
+    const r = db.reports.find(x => x.id === id); if (!r) throw new Error('Report not found');
+    r.reviewed = 1; r.manager_note = String(payload.note || '').trim();
+    staticLog(db, 'review', `Report on '${staticTask(db,r.task_id).title}' reviewed by manager`, r.project_id, r.task_id, r.worker_id, 'manager');
+    staticWriteDb(db); return {ok:true};
+  }
+  match = path.match(/^\/api\/tasks\/([^/]+)\/start$/);
+  if (match && method === 'POST') {
+    if (user.role !== 'worker') throw new Error('Workers only'); const t = staticTask(db, decodeURIComponent(match[1]));
+    if (t.assignee !== user.id) throw new Error('You can only update your own tasks');
+    if (t.status === 'completed') throw new Error('Task already completed');
+    if (t.status !== 'delayed') t.status = 'in_progress'; t.started_at = t.started_at || staticNow(); t.updated_at = staticNow();
+    staticLog(db, 'start', `${user.name} started '${t.title}'`, t.project_id, t.id, user.id, user.id);
+    staticWriteDb(db); return {ok:true};
+  }
+  match = path.match(/^\/api\/tasks\/([^/]+)\/progress$/);
+  if (match && method === 'POST') {
+    if (user.role !== 'worker') throw new Error('Workers only'); const t = staticTask(db, decodeURIComponent(match[1]));
+    if (t.assignee !== user.id) throw new Error('You can only update your own tasks');
+    if (t.status === 'completed') throw new Error('Task already completed');
+    const progress = Math.max(0, Math.min(99, Number(payload.progress) || 0));
+    t.progress = progress; if (t.status !== 'delayed') t.status = 'in_progress'; t.started_at = t.started_at || staticNow(); t.updated_at = staticNow();
+    const updateId = Math.max(0, ...db.updates.map(x=>Number(x.id)||0)) + 1;
+    db.updates.unshift({id:updateId,task_id:t.id,project_id:t.project_id,worker_id:user.id,progress,note:String(payload.note||'').trim(),created_at:staticNow()});
+    staticLog(db, 'progress', `${t.title} at ${progress}% - ${String(payload.note||'progress update')} (${user.name})`, t.project_id, t.id, user.id, user.id);
+    staticWriteDb(db); return {ok:true};
+  }
+  match = path.match(/^\/api\/tasks\/([^/]+)\/report$/);
+  if (match && method === 'POST') {
+    if (user.role !== 'worker') throw new Error('Workers only'); const t = staticTask(db, decodeURIComponent(match[1]));
+    if (t.assignee !== user.id) throw new Error('You can only update your own tasks');
+    const form = opts.body instanceof FormData ? opts.body : new FormData();
+    const kind = String(form.get('kind') || ''); const cause = String(form.get('cause') || '');
+    const reason = String(form.get('reason') || '').trim(); const notes = String(form.get('notes') || '').trim();
+    const days = Math.max(0, Math.min(365, Number(form.get('delay_days') || 0)));
+    if (!['completed','delay','photo'].includes(kind)) throw new Error('Invalid report type');
+    if (kind === 'delay' && (!cause || reason.length < 5)) throw new Error('Choose a cause and explain the delay');
+    const files = form.getAll('photos').filter(f => f instanceof Blob && f.size > 0);
+    if ((kind === 'delay' || kind === 'photo') && !files.length) throw new Error(kind === 'delay' ? 'Photo proof is required for a delay report' : 'Please add at least one photo to send');
+    const photosData = [];
+    for (const file of files.slice(0, 4)) photosData.push((await staticPhotoData(file)) || STATIC_BASE_STATE.reports[0].photos[0]);
+    const rid = staticReportId(); const analysis = staticAnalyze(cause, reason, days);
+    const report = {id:rid, task_id:t.id, project_id:t.project_id, worker_id:user.id, kind, cause:kind==='delay'?cause:'',
+      reason:kind==='delay'?reason:'', notes, delay_days:kind==='delay'?days:0, photos:photosData,
+      ai_cause:kind==='delay'?analysis.ai_cause:'', ai_confidence:kind==='delay'?analysis.ai_confidence:0,
+      ai_action:kind==='delay'?analysis.ai_action:'', ai_keywords:kind==='delay'?analysis.ai_keywords:[],
+      severity:kind==='delay'?analysis.severity:'', reviewed:kind==='delay'?0:1, manager_note:'', created_at:staticNow()};
+    db.reports.unshift(report); t.updated_at = staticNow();
+    if (kind === 'delay') { t.status='delayed'; t.started_at=t.started_at||staticNow(); staticLog(db,'delay',`'${t.title}' is ${days}d late due to ${cause} - reported by ${user.name}`,t.project_id,t.id,user.id,user.id); }
+    else if (kind === 'photo') { t.started_at=t.started_at||staticNow(); staticLog(db,'photo',`${user.name} sent ${photosData.length} photo(s) for '${t.title}'`,t.project_id,t.id,user.id,user.id); }
+    else { t.status='completed'; t.progress=100; t.completed_at=staticNow(); staticLog(db,'completed',`${user.name} completed '${t.title}'`,t.project_id,t.id,user.id,user.id); }
+    staticWriteDb(db); return {ok:true, report_id:rid, status:kind==='delay'?'delayed':kind};
+  }
+  throw new Error('This demo action is not available: ' + method + ' ' + path);
+}
+
+async function api(url, opts = {}) {
+  if (STATIC_DEMO) return staticApi(url, opts);
+  const headers = { ...(opts.headers || {}) };
+  if (S.token) headers.Authorization = 'Bearer ' + S.token;
+  if (opts.json !== undefined) { headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(opts.json); }
+  const r = await fetch(url, { method: opts.method || 'GET', headers, body: opts.body });
+  let data = {};
+  try { data = await r.json(); } catch { }
+  if (r.status === 401 && S.token && !url.includes('/login')) { logout(true); throw new Error('Session expired'); }
+  if (!r.ok) {
+    const d = data.detail;
+    throw new Error(typeof d === 'string' ? d : Array.isArray(d) ? d.map(x => x.msg).join(', ') : 'Request failed');
+  }
+  return data;
+}
+
+const nowMs = () => Date.now() - S.skew;
+function ago(iso) {
+  if (!iso) return '';
+  const s = Math.max(0, (nowMs() - new Date(iso).getTime()) / 1000);
+  if (s < 45) return 'just now';
+  if (s < 3600) return Math.round(s / 60) + 'm ago';
+  if (s < 86400) return Math.round(s / 3600) + 'h ago';
+  return Math.round(s / 86400) + 'd ago';
+}
+const fmtDate = d => { if (!d) return '—'; const x = new Date(d.slice(0, 10) + 'T12:00:00'); return isNaN(x) ? d : x.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); };
+const fmtDT = iso => { const x = new Date(iso); return isNaN(x) ? iso : x.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); };
+const addDays = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
+const worker = id => (S.data?.workers || []).find(w => w.id === id) || { id, name: id || 'Unassigned', trade: '', color: '#8ea3b1' };
+const project = id => (S.data?.projects || []).find(p => p.id === id) || { id, name: 'Unknown project', location: '' };
+const task = id => (S.data?.tasks || []).find(t => t.id === id);
+const avatar = w => `<span class="avatar" style="background:${esc(w.color || '#67e0b1')}">${esc(initials(w.name))}</span>`;
+const chip = (cls, text) => `<span class="chip ${cls}">${esc(text)}</span>`;
+const statusChip = t => t.is_overdue && t.status !== 'delayed' ? chip('overdue', 'Overdue') : chip(t.status, STATUS[t.status] || t.status);
+const projStats = pid => {
+  const ts = S.data.tasks.filter(t => t.project_id === pid);
+  const done = ts.filter(t => t.status === 'completed').length;
+  const pct = ts.length ? Math.round(ts.reduce((a, t) => a + (t.status === 'completed' ? 100 : t.progress || 0), 0) / ts.length) : 0;
+  return { total: ts.length, done, pct, delayed: ts.filter(t => t.status === 'delayed').length, overdue: ts.filter(t => t.is_overdue).length, active: ts.filter(t => t.status === 'in_progress').length };
+};
+
+/* ============================== toast / modal ============================== */
+function toast(msg, type = '', title = '') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = `<div>${title ? `<b>${esc(title)}</b>` : ''}${esc(msg)}</div>`;
+  $('#toastRoot').appendChild(el);
+  setTimeout(() => { el.style.transition = '.3s'; el.style.opacity = 0; setTimeout(() => el.remove(), 300); }, type === 'warn' ? 7000 : 4500);
+}
+function beep() {
+  try {
+    const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain();
+    o.type = 'sine'; o.frequency.value = 740; g.gain.setValueAtTime(.001, a.currentTime); g.gain.exponentialRampToValueAtTime(.15, a.currentTime + .02);
+    g.gain.exponentialRampToValueAtTime(.001, a.currentTime + .5); o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + .5);
+  } catch { }
+}
+let modalSticky = false;
+function openModal(html, { wide = false, sticky = false } = {}) {
+  modalSticky = sticky;
+  $('#modalRoot').innerHTML = `<div class="modal-bg" id="mbg"><div class="modal ${wide ? 'wide' : ''}" role="dialog">${html}</div></div>`;
+  document.body.style.overflow = 'hidden';
+}
+function setModal(html) { const m = $('#modalRoot .modal'); if (!m) return; const y = m.scrollTop; m.innerHTML = html; m.scrollTop = y; }
+function closeModal() { $('#modalRoot').innerHTML = ''; document.body.style.overflow = ''; photos.length = 0; }
+document.addEventListener('mousedown', e => { if (e.target.id === 'mbg' && !modalSticky) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!$('#lightbox').hidden) closeLightbox(); else if (!modalSticky) closeModal(); } });
+
+/* lightbox */
+let lb = { list: [], i: 0 };
+function openLightbox(list, i) { lb = { list, i }; drawLightbox(); }
+function drawLightbox() {
+  const box = $('#lightbox'); box.hidden = false;
+  box.innerHTML = `<button class="close" data-act="lbClose">✕</button>${lb.list.length > 1 ? '<button class="nav prev" data-act="lbPrev">‹</button><button class="nav next" data-act="lbNext">›</button>' : ''}<img src="${esc(lb.list[lb.i])}" alt="Evidence photo"><small>${lb.i + 1} / ${lb.list.length}</small>`;
+}
+function closeLightbox() { const b = $('#lightbox'); b.hidden = true; b.innerHTML = ''; }
+
+/* ============================== charts ============================== */
+function donut(segs, centerBig, centerSmall) {
+  const r = 54, c = 2 * Math.PI * r, total = segs.reduce((a, s) => a + s.v, 0);
+  let off = 0, arcs = '';
+  if (total) segs.filter(s => s.v).forEach(s => { const len = s.v / total * c; arcs += `<circle cx="70" cy="70" r="${r}" fill="none" stroke="${s.c}" stroke-width="16" stroke-dasharray="${Math.max(0, len - 2)} ${c - Math.max(0, len - 2)}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)"/>`; off += len; });
+  return `<div class="donut-wrap"><svg viewBox="0 0 140 140" width="170" height="170"><circle cx="70" cy="70" r="${r}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="16"/>${arcs}</svg><div class="center"><b>${centerBig}</b><small>${centerSmall}</small></div></div>`;
+}
+function ring(pct, color = '#67e0b1') {
+  const r = 26, c = 2 * Math.PI * r;
+  return `<div class="ring"><svg viewBox="0 0 64 64" width="62" height="62"><circle cx="32" cy="32" r="${r}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="7"/><circle cx="32" cy="32" r="${r}" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${c * pct / 100} ${c}" transform="rotate(-90 32 32)"/></svg><span>${pct}%</span></div>`;
+}
+const bar = (label, val, max, color, right) => `<div class="hbar"><div class="row"><span>${label}</span><b>${right ?? val}</b></div><div class="track" style="--c:${color}"><i style="width:${max ? Math.max(4, val / max * 100) : 0}%"></i></div></div>`;
+const emptyState = (t, s = '') => `<div class="empty">${ICON.inbox}<div>${esc(t)}</div><div style="font-size:12px">${esc(s)}</div></div>`;
+
+/* ============================== auth / boot ============================== */
+function showLanding() {
+  S.token = null; S.me = null; S.data = null; S.shellFor = null;
+  const feats = [['⚡', 'Real-time sync', 'Every update a worker sends shows up on the manager dashboard instantly, with no refresh and no phone calls.'], ['📷', 'Photo proof', 'Crews send site photos with progress updates and completions, so managers see the work for themselves.'], ['🧠', 'AI delay detection', 'Workers explain a delay in plain words. The AI finds the root cause, severity and a suggested action.'], ['🧱', 'Ready work breakdown', 'Pick a project type and get every work package by trade, ready to assign with dates.'], ['👷', 'Role-based access', 'Workers see only their own tasks. Managers see every site, crew and risk.'], ['📱', 'Works on any phone', 'No app to install. Open it in a browser on site, on a tablet or at the office.']];
+  const steps = [['1', 'Create a project', 'Choose Residential, Road, Bridge, Solar and more. The full work list is generated for you.'], ['2', 'Assign your crews', 'Give each field and worker their work packages and due dates in one screen.'], ['3', 'Track it live', 'Workers report from the field. You watch progress, delays and photos as they happen.']];
+  $('#app').innerHTML = `
+  <div class="land">
+    <header class="land-nav"><div class="logo"><div class="logo-mark">I</div><div><b>INFRASYNC</b><small>AI SITE COMMAND</small></div></div>
+      <nav><a href="#features" data-act="scrollTo" data-id="features">Features</a><a href="#how" data-act="scrollTo" data-id="how">How it works</a><a href="#roles" data-act="scrollTo" data-id="roles">Who it's for</a></nav>
+      <button class="btn primary" data-act="goLogin">Sign in →</button></header>
+    <section class="land-hero">
+      <div class="land-copy"><span class="pill">🏗️ Construction site management</span>
+        <h1>One live view of every <em>site, crew and delay.</em></h1>
+        <p>INFRASYNC AI connects your field crews and your office. Workers report progress and photo proof in seconds, and managers see delays, causes and risks the moment they happen.</p>
+        <div class="land-cta"><button class="btn primary big" data-act="goLogin">Sign in →</button><button class="btn big" data-act="scrollTo" data-id="how">See how it works</button></div>
+        <div class="land-stats"><div><b>22</b><small>work packages in one view</small></div><div><b>8</b><small>trades tracked</small></div><div><b>0</b><small>paperwork to chase</small></div></div></div>
+      <div class="land-mock card"><div class="mock-top"><i></i><i></i><i></i><span>Command center</span></div>
+        <div class="mock-kpis"><div><small>PROJECTS</small><b style="color:var(--blue)">2</b></div><div><small>IN PROGRESS</small><b style="color:var(--cyan)">3</b></div><div><small>DELAYED</small><b style="color:var(--red)">2</b></div></div>
+        <div class="mock-row"><span>Civil</span><div class="track" style="--c:#67e0b1"><i style="width:68%"></i></div><b>68%</b></div>
+        <div class="mock-row"><span>Electrical</span><div class="track" style="--c:#80adff"><i style="width:42%"></i></div><b>42%</b></div>
+        <div class="mock-row"><span>Plumbing</span><div class="track" style="--c:#5fd3e8"><i style="width:25%"></i></div><b>25%</b></div>
+        <div class="mock-alert"><span class="ic red">⚠</span><div><b>Column &amp; slab formwork</b><small>🧠 Bad weather · 2d late · photo proof attached</small></div></div></div>
+    </section>
+    <section class="land-sec" id="features"><h2>Everything a site team needs</h2><p class="sub">Built for managers who need clarity and crews who need speed.</p>
+      <div class="land-grid">${feats.map(f => `<div class="card feat-card"><span>${f[0]}</span><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div></section>
+    <section class="land-sec" id="how"><h2>How it works</h2><p class="sub">From project set-up to live tracking in three steps.</p>
+      <div class="land-steps">${steps.map(x => `<div class="card step-card"><i>${x[0]}</i><h3>${x[1]}</h3><p>${x[2]}</p></div>`).join('')}</div></section>
+    <section class="land-sec" id="roles"><h2>Made for both sides of the site</h2><p class="sub">Each person gets a screen designed for their job.</p>
+      <div class="land-roles"><div class="card"><h3>🧑‍💼 Site Manager</h3><ul><li>Live dashboard of progress, delays and overdue work</li><li>AI delay causes with photo evidence</li><li>Create projects and assign crews</li><li>Team workload and live activity feed</li></ul></div>
+        <div class="card"><h3>👷 Field Worker</h3><ul><li>Simple list of your own tasks only</li><li>Start work, update progress, finish in a tap</li><li>Send photos from the camera or gallery</li><li>Report a delay with the reason in seconds</li></ul></div></div></section>
+    <section class="land-final card"><h2>Ready to see your site live?</h2><p>Sign in as a manager or a crew member to get started.</p><button class="btn primary big" data-act="goLogin">Sign in →</button></section>
+    <footer class="land-foot">© INFRASYNC AI · Hackathon demo · Browser-local sample data</footer>
+  </div>`;
+  window.scrollTo(0, 0);
+}
+let loginSel = 'manager', loginOpts = null;
+async function showLogin() {
+  S.token = null; S.me = null; S.data = null;
+  if (!loginOpts) { try { loginOpts = await api('/api/login-options'); } catch { loginOpts = { manager: { id: 'manager', name: 'Site Manager', trade: 'Management', color: '#67e0b1' }, workers: [] }; } }
+  const all = [loginOpts.manager, ...loginOpts.workers];
+  $('#app').innerHTML = `
+  <div class="login"><div class="login-card">
+    <div class="login-hero">
+      <div class="logo"><div class="logo-mark">I</div><div><b>INFRASYNC</b><small>AI SITE COMMAND</small></div></div>
+      <h1>One live view of every <em>site, crew and delay.</em></h1>
+      <p>Workers report from the field in seconds. Managers see progress, delays and photo proof the moment it happens.</p>
+      <div class="feat">
+        <div><span>⚡</span>Real-time sync between field and manager dashboard</div>
+        <div><span>🧠</span>AI-detected delay causes with evidence photos</div>
+        <div><span>🧱</span>Prebuilt work breakdown for every project type</div>
+      </div>
+    </div>
+    <form class="login-form" id="loginForm" autocomplete="off">
+      <button type="button" class="back-link" data-act="goLanding">← Back to home</button>
+      <h2>Sign in</h2><p>Choose your role and enter your PIN.</p><p class="hint">Hackathon demo · Manager PIN: <b>admin123</b> · Worker PIN: <b>1234</b></p>
+      <div class="role-grid">${all.map(u => `<button type="button" class="role ${u.id === 'manager' ? 'manager' : ''} ${u.id === loginSel ? 'sel' : ''}" data-act="pickRole" data-id="${esc(u.id)}">${avatar(u)}<div><b>${esc(u.name)}</b><small>${esc(u.id === 'manager' ? 'Manager dashboard' : u.trade + ' crew')}</small></div></button>`).join('')}</div>
+      <div class="pin-row"><div class="field" style="flex:1;margin:0"><label>PIN</label><input class="inp" id="pin" type="password" inputmode="numeric" placeholder="Enter PIN" autocomplete="off"></div><button class="btn primary" style="align-self:flex-end;height:44px" type="submit">Sign in →</button></div>
+      <div class="err" id="loginErr"></div>
+    </form>
+  </div></div>`;
+  $('#loginForm').onsubmit = async e => {
+    e.preventDefault();
+    const btn = $('#loginForm button[type=submit]'); btn.disabled = true;
+    try {
+      const r = await api('/api/login', { method: 'POST', json: { user_id: loginSel, pin: $('#pin').value } });
+      S.token = r.token; store.set('infrasync_token', r.token);
+      await startApp();
+    } catch (err) { $('#loginErr').textContent = err.message; btn.disabled = false; }
+  };
+  setTimeout(() => $('#pin')?.focus(), 50);
+}
+function logout(silent) {
+  store.del('infrasync_token');
+  if (S.ws) { S.ws.onclose = null; try { S.ws.close(); } catch { } S.ws = null; }
+  closeModal(); S.shellFor = null; S.page = 'overview';
+  showLanding();
+  if (silent) setTimeout(() => toast('Please sign in again', 'warn'), 100);
+}
+async function startApp() {
+  const d = await api('/api/state');
+  applyState(d);
+  S.me = d.me; S.shellFor = null;
+  connectWS();
+  render();
+}
+function applyState(d) { S.data = d; S.skew = Date.now() - new Date(d.server_time).getTime(); }
+let refreshTimer = null;
+function refreshSoon() { clearTimeout(refreshTimer); refreshTimer = setTimeout(refresh, 120); }
+async function refresh() {
+  if (!S.token) return;
+  try { applyState(await api('/api/state')); render(); } catch (e) { /* offline */ }
+}
+
+/* ============================== realtime ============================== */
+let wsRetry = 0, pingTimer = null;
+function connectWS() {
+  if (STATIC_DEMO) { S.wsOk = false; setLive(); return; }
+  if (S.ws) { S.ws.onclose = null; try { S.ws.close(); } catch { } }
+  const url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?token=' + encodeURIComponent(S.token);
+  const ws = new WebSocket(url); S.ws = ws;
+  ws.onopen = () => { S.wsOk = true; wsRetry = 0; setLive(); refresh(); clearInterval(pingTimer); pingTimer = setInterval(() => { try { ws.send('ping'); } catch { } }, 25000); };
+  ws.onmessage = ev => {
+    let m; try { m = JSON.parse(ev.data); } catch { return; }
+    if (m.type !== 'update') return;
+    refreshSoon();
+    if (m.actor && m.actor !== S.me?.id) {
+      if (S.me.role === 'manager') {
+        if (m.kind === 'delay') { toast(m.message, 'warn', '⚠ New delay report'); beep(); }
+        else if (m.kind === 'completed') toast(m.message, '', '✓ Work completed');
+        else toast(m.message, '', 'Field update');
+      } else toast(m.message, m.kind === 'reopen' ? 'warn' : '', 'Manager update');
+    }
+  };
+  ws.onclose = () => { S.wsOk = false; setLive(); clearInterval(pingTimer); if (S.token) setTimeout(connectWS, Math.min(8000, 800 * ++wsRetry)); };
+  ws.onerror = () => { try { ws.close(); } catch { } };
+}
+function setLive() { $$('.live-pill').forEach(p => { p.innerHTML = STATIC_DEMO ? '<span class="dot off"></span><span class="t">Demo · saved in this browser</span>' : `<span class="dot ${S.wsOk ? '' : 'off'}"></span><span class="t">${S.wsOk ? 'Live · real-time' : 'Reconnecting…'}</span>`; }); }
+setInterval(() => { if (!STATIC_DEMO && S.token && !S.wsOk) refresh(); }, 6000);
+setInterval(() => { if (!STATIC_DEMO && S.token) refresh(); }, 45000); // safety net
+
+/* ============================== render dispatcher ============================== */
+function render() {
+  if (!S.data || !S.me) return;
+  const ae = document.activeElement;
+  if (ae && ae.closest && ae.closest('#page') && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)) { S.renderPending = true; return; }
+  S.renderPending = false;
+  S.me.role === 'manager' ? renderManager() : renderWorker();
+}
+document.addEventListener('focusout', () => { if (S.renderPending) setTimeout(render, 150); });
+
+/* ============================== MANAGER ============================== */
+const MNAV = [['overview', 'Command center', 'grid'], ['projects', 'Projects & work', 'folder'], ['delays', 'Delays & evidence', 'alert'], ['team', 'Team workload', 'team'], ['activity', 'Live activity', 'pulse']];
+const MTITLE = {
+  overview: ['COMMAND CENTER', () => `${greet()}, Manager`, 'Live view of delivery, field progress and emerging risk.'],
+  projects: ['PROJECTS', () => 'Projects & work packages', 'Create projects from prebuilt work breakdowns and assign every field.'],
+  delays: ['EVIDENCE', () => 'Delays & evidence', 'AI-detected delay causes with the worker\'s photo proof.'],
+  team: ['TEAM', () => 'Team workload', 'See who is carrying what, by field.'],
+  activity: ['ACTIVITY', () => 'Live activity stream', 'Every field update as it happens.'],
+};
+const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
+
+function renderManager() {
+  if (S.shellFor !== 'manager') {
+    S.shellFor = 'manager';
+    $('#app').innerHTML = `<div class="shell"><aside class="sidebar">
+      <div class="logo"><div class="logo-mark">I</div><div><b>INFRASYNC</b><small>AI SITE COMMAND</small></div></div>
+      ${MNAV.map(([id, label, ic]) => `<button class="nav-item" data-act="nav" data-id="${id}">${ICON[ic]}<span>${label}</span>${id === 'delays' ? '<span class="badge zero" id="delayBadge">0</span>' : ''}</button>`).join('')}
+      <div class="side-bottom"><div class="profile">${avatar(S.me)}<div style="flex:1"><b>${esc(S.me.name)}</b><small>MANAGER ACCESS</small></div><button class="icon-btn" data-act="logout" title="Sign out">${ICON.logout}</button></div></div>
+    </aside><main class="main"><div id="page"></div></main></div>`;
+  }
+  $$('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.id === S.page));
+  const unrev = S.data.reports.filter(r => r.kind === 'delay' && !r.reviewed).length;
+  const bd = $('#delayBadge'); if (bd) { bd.textContent = unrev; bd.classList.toggle('zero', !unrev); }
+  const [crumb, title, sub] = MTITLE[S.page];
+  const body = { overview: pOverview, projects: pProjects, delays: pDelays, team: pTeam, activity: pActivity }[S.page]();
+  const page = $('#page'), y = window.scrollY;
+  page.innerHTML = `<header class="topbar"><div><div class="crumb">WORKSPACE / <b>${crumb}</b></div><h1>${esc(title())}</h1><p>${esc(sub)}</p></div>
+    <div class="top-actions"><div class="live-pill"></div><button class="btn primary" data-act="newProject">＋ New project</button></div></header>${body}`;
+  setLive(); window.scrollTo(0, y);
+}
+
+function pOverview() {
+  const d = S.data, T = d.tasks, R = d.reports;
+  const cnt = s => T.filter(t => t.status === s).length;
+  const done = cnt('completed'), delayed = cnt('delayed'), prog = cnt('in_progress'), assigned = cnt('assigned');
+  const overdue = T.filter(t => t.is_overdue).length;
+  const onTime = T.filter(t => t.status === 'completed' && t.completed_at && t.completed_at.slice(0, 10) <= t.due_date).length;
+  const rate = done ? Math.round(onTime / done * 100) : 100;
+  const kpis = [['Projects', d.projects.length, 'active sites', '#80adff'], ['In progress', prog, 'crews working now', '#5fd3e8'], ['Completed', done, `of ${T.length} work packages`, '#67e0b1'], ['Delayed', delayed, 'need attention', '#ff6f7b'], ['Overdue', overdue, 'past due date', '#f5bc63'], ['On-time rate', rate + '%', 'completed on schedule', '#d2a5ff']];
+  const dels = R.filter(r => r.kind === 'delay');
+  const byCause = {}; dels.forEach(r => byCause[r.ai_cause] = (byCause[r.ai_cause] || 0) + 1);
+  const causeRows = Object.entries(byCause).sort((a, b) => b[1] - a[1]); const cmax = causeRows[0]?.[1] || 1;
+  const att = [
+    ...dels.filter(r => !r.reviewed).map(r => ({ kind: 'delay', r })),
+    ...T.filter(t => t.is_overdue && t.status !== 'delayed').map(t => ({ kind: 'overdue', t })),
+  ].slice(0, 6);
+  const feed = d.activity.slice(0, 12);
+  const byTrade = {}; T.forEach(t => { const b = byTrade[t.trade] ||= { n: 0, d: 0 }; b.n++; if (t.status === 'completed') b.d++; });
+  return `
+  <div class="grid g-kpi">${kpis.map((k, i) => `<div class="card kpi" style="--c:${k[3]};animation-delay:${i * 50}ms"><small>${k[0]}</small><b>${k[1]}</b><span>${k[2]}</span></div>`).join('')}</div>
+  <div class="grid g-3">
+    <div class="card"><h3>Live field status<small>${T.length} tasks</small></h3>
+      ${T.length ? donut([{ v: done, c: '#67e0b1' }, { v: prog, c: '#5fd3e8' }, { v: assigned, c: '#80adff' }, { v: delayed, c: '#ff6f7b' }], T.length ? Math.round(done / T.length * 100) + '%' : '0%', 'complete') : emptyState('No tasks yet')}
+      <div class="legend"><div><i style="background:#67e0b1"></i>Completed<b>${done}</b></div><div><i style="background:#5fd3e8"></i>In progress<b>${prog}</b></div><div><i style="background:#80adff"></i>Not started<b>${assigned}</b></div><div><i style="background:#ff6f7b"></i>Delayed<b>${delayed}</b></div></div></div>
+    <div class="card"><h3>🧠 AI delay root causes<small>${dels.length} reports</small></h3>
+      ${causeRows.length ? causeRows.map(([c, n], i) => bar(`${CAUSE_ICON[c] || ''} ${esc(c)}`, n, cmax, PALETTE[i % PALETTE.length], n + (n > 1 ? ' delays' : ' delay'))).join('') : emptyState('No delays reported', 'Great — everything on track.')}
+      <h3 style="margin-top:18px">Progress by field</h3>
+      ${Object.entries(byTrade).map(([tr, b]) => bar(esc(tr), b.d, b.n, '#67e0b1', `${b.d}/${b.n}`)).join('') || ''}</div>
+    <div class="card"><h3>Needs attention<small>${att.length ? 'click to open' : ''}</small></h3>
+      <div class="list">${att.length ? att.map(a => a.kind === 'delay'
+        ? `<button class="item" data-act="gotoTask" data-id="${a.r.task_id}"><span class="ic red">⚠</span><span class="grow"><b>${esc(task(a.r.task_id)?.title || 'Task')}</b><small>${esc(a.r.ai_cause)} · ${a.r.delay_days}d late · ${esc(worker(a.r.worker_id).name)}</small></span>${chip(a.r.severity, a.r.severity)}</button>`
+        : `<button class="item" data-act="gotoTask" data-id="${a.t.id}"><span class="ic amber">⏰</span><span class="grow"><b>${esc(a.t.title)}</b><small>Overdue since ${fmtDate(a.t.due_date)} · ${esc(worker(a.t.assignee).name)}</small></span>${chip('overdue', 'overdue')}</button>`).join('')
+        : emptyState('All clear', 'No unreviewed delays or overdue work.')}</div></div>
+  </div>
+  <div class="grid g-2">
+    <div class="card"><h3>Projects<small><a href="#" data-act="nav" data-id="projects" style="color:var(--mint);text-decoration:none">View all →</a></small></h3>
+      <div class="proj-cards">${d.projects.length ? d.projects.map(projCard).join('') : emptyState('No projects', 'Create your first project.')}</div></div>
+    <div class="card"><h3>Live activity<small><span class="dot" style="display:inline-block"></span></small></h3><div class="feed">${feed.length ? feed.map(evHtml).join('') : emptyState('No activity yet')}</div></div>
+  </div>`;
+}
+function projCard(p) {
+  const s = projStats(p.id);
+  return `<div class="card pcard" style="padding:14px" data-act="gotoProject" data-id="${p.id}">${ring(s.pct, s.delayed ? '#f5bc63' : '#67e0b1')}<div style="min-width:0"><b>${esc(p.name)}</b><small>${esc(p.location || p.template)}</small>
+    <div class="mini">${chip('neutral', s.done + '/' + s.total + ' done')}${s.delayed ? chip('delayed', s.delayed + ' delayed') : ''}${s.overdue ? chip('overdue', s.overdue + ' overdue') : ''}</div></div></div>`;
+}
+const EVI = { delay: ['⚠', 'rgba(255,111,123,.15)'], completed: ['✓', 'rgba(103,224,177,.15)'], progress: ['↗', 'rgba(95,211,232,.15)'], start: ['▶', 'rgba(128,173,255,.15)'], assign: ['👤', 'rgba(210,165,255,.15)'], project: ['＋', 'rgba(103,224,177,.15)'], reopen: ['↺', 'rgba(245,188,99,.15)'], review: ['✔', 'rgba(128,173,255,.15)'], photo: ['📷', 'rgba(95,211,232,.15)'] };
+function evHtml(a) { const [ic, bg] = EVI[a.kind] || ['•', 'rgba(255,255,255,.08)']; return `<div class="ev"><div class="bubble" style="background:${bg}">${ic}</div><div><p>${esc(a.message)}</p><small>${ago(a.created_at)}${a.actor && a.actor !== 'manager' ? ' · ' + esc(worker(a.actor).name) : ''}</small></div></div>`; }
+
+function pActivity() {
+  const a = S.data.activity;
+  return `<div class="card"><h3>Everything happening on site<small>${a.length} latest events</small></h3><div class="feed" style="max-height:none">${a.length ? a.map(evHtml).join('') : emptyState('No activity yet')}</div></div>`;
+}
+
+function pTeam() {
+  const W = S.data.workers, T = S.data.tasks;
+  const rows = W.map(w => {
+    const ts = T.filter(t => t.assignee === w.id), c = s => ts.filter(t => t.status === s).length;
+    return { w, n: ts.length, prog: c('in_progress'), done: c('completed'), del: c('delayed'), ov: ts.filter(t => t.is_overdue).length };
+  });
+  const max = Math.max(1, ...rows.map(r => r.n));
+  return `<div class="card"><div class="table-wrap"><table><thead><tr><th>Worker</th><th>Field</th><th>Assigned</th><th>In progress</th><th>Completed</th><th>Delayed</th><th>Overdue</th><th style="width:22%">Load</th></tr></thead><tbody>
+  ${rows.map(r => `<tr><td><div class="person">${avatar(r.w)}<b>${esc(r.w.name)}</b></div></td><td>${chip('neutral', r.w.trade)}</td><td>${r.n}</td><td>${r.prog}</td><td>${r.done}</td><td>${r.del ? chip('delayed', r.del) : '0'}</td><td>${r.ov ? chip('overdue', r.ov) : '0'}</td>
+  <td><div class="track" style="--c:${r.w.color}"><i style="width:${r.n / max * 100}%"></i></div></td></tr>`).join('')}</tbody></table></div></div>`;
+}
+
+/* ---- projects page ---- */
+function pProjects() {
+  const P = S.data.projects;
+  if (!P.length) return `<div class="card">${emptyState('No projects yet', 'Click “New project” to generate the full work breakdown.')}</div>`;
+  return P.map((p, i) => {
+    const s = projStats(p.id), open = S.open[p.id] ?? (i === 0);
+    const ts = S.data.tasks.filter(t => t.project_id === p.id);
+    return `<div class="card" style="margin-bottom:16px" id="proj-${p.id}">
+      <div class="panel-head" style="margin:0"><div style="display:flex;gap:14px;align-items:center;cursor:pointer" data-act="toggleProject" data-id="${p.id}">${ring(s.pct, s.delayed ? '#f5bc63' : '#67e0b1')}
+        <div><h3 style="margin:0">${esc(p.name)} <span class="chip neutral">${esc(p.id)}</span></h3><div class="hint">${esc(p.location || '—')} · ${esc(p.template)} · started ${fmtDate(p.start_date)}</div>
+        <div class="mini">${chip('neutral', s.done + '/' + s.total + ' done')}${s.active ? chip('in_progress', s.active + ' in progress') : ''}${s.delayed ? chip('delayed', s.delayed + ' delayed') : ''}${s.overdue ? chip('overdue', s.overdue + ' overdue') : ''}</div></div></div>
+        <div style="display:flex;gap:8px"><button class="btn sm" data-act="addTask" data-id="${p.id}">＋ Add work</button><button class="btn sm danger" data-act="delProject" data-id="${p.id}">Delete</button><button class="btn sm" data-act="toggleProject" data-id="${p.id}">${open ? 'Collapse ▲' : 'Expand ▼'}</button></div></div>
+      ${open ? `<div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Work package</th><th>Field</th><th>Assigned to</th><th>Due</th><th>Status</th><th>Progress</th><th></th></tr></thead><tbody>
+      ${ts.map(t => {
+        const lastDel = S.data.reports.find(r => r.task_id === t.id && r.kind === 'delay');
+        return `<tr id="task-${t.id}"><td><a href="#" data-act="openTask" data-id="${t.id}" style="color:var(--text);text-decoration:none"><b>${esc(t.title)}</b></a><div class="hint">${esc((t.description || '').slice(0, 64))}</div></td><td>${chip('neutral', t.trade)}</td>
+        <td><select class="sel-inp" data-change="assign" data-id="${t.id}">${S.data.workers.map(w => `<option value="${w.id}" ${w.id === t.assignee ? 'selected' : ''}>${esc(w.name)} · ${esc(w.trade)}</option>`).join('')}</select></td>
+        <td><input class="inp" type="date" value="${esc(t.due_date)}" data-change="due" data-id="${t.id}"></td><td>${statusChip(t)}</td>
+        <td><div class="prog-mini"><div class="track" style="--c:${t.status === 'delayed' ? '#ff6f7b' : '#67e0b1'}"><i style="width:${t.status === 'completed' ? 100 : t.progress || 0}%"></i></div><small>${t.status === 'completed' ? 100 : t.progress || 0}%</small></div></td>
+        <td style="white-space:nowrap">${lastDel ? `<button class="btn sm warn" data-act="openReport" data-id="${lastDel.id}">View cause</button>` : ''} ${t.status === 'completed' || t.status === 'delayed' ? `<button class="btn sm" data-act="reopen" data-id="${t.id}">Reopen</button>` : ''}</td></tr>`;
+      }).join('')}</tbody></table></div>` : ''}</div>`;
+  }).join('');
+}
+
+/* ---- delays page ---- */
+function pDelays() {
+  const R = S.data.reports, dels = R.filter(r => r.kind === 'delay'), comps = R.filter(r => r.kind === 'completed' && r.photos.length), shots = R.filter(r => r.kind === 'photo');
+  const tabs = [['all', 'All delays', dels.length], ['new', 'Unreviewed', dels.filter(r => !r.reviewed).length], ['high', 'High severity', dels.filter(r => r.severity === 'high').length], ['done', 'Completion proof', comps.length], ['photos', 'Field photos', shots.length]];
+  let list = S.delayTab === 'new' ? dels.filter(r => !r.reviewed) : S.delayTab === 'high' ? dels.filter(r => r.severity === 'high') : S.delayTab === 'done' ? comps : S.delayTab === 'photos' ? shots : dels;
+  return `<div class="panel-head"><div class="tabs">${tabs.map(t => `<button class="tab ${S.delayTab === t[0] ? 'on' : ''}" data-act="delayTab" data-id="${t[0]}">${t[1]} · ${t[2]}</button>`).join('')}</div></div>
+  ${list.length ? list.map((r, i) => reportCard(r, i)).join('') : `<div class="card">${emptyState('Nothing here', S.delayTab === 'photos' ? 'Photos workers send from the field appear here.' : S.delayTab === 'done' ? 'Completion photos from workers appear here.' : 'No delay reports match this filter.')}</div>`}`;
+}
+function thumbs(ph) {
+  if (!ph.length) return '<div class="thumbs"><div class="none">No photos</div></div>';
+  const s = ph.slice(0, 2); return `<div class="thumbs ${s.length === 1 ? 'one' : ''}">${s.map(p => `<img loading="lazy" src="${esc(p)}" alt="">`).join('')}</div>`;
+}
+function reportCard(r, i) {
+  const t = task(r.task_id), w = worker(r.worker_id), p = project(r.project_id);
+  if (r.kind === 'photo') return `<div class="card dcard" style="grid-template-columns:150px 1fr" data-act="openReport" data-id="${r.id}">${thumbs(r.photos)}<div><h4>${esc(t?.title || 'Task')}</h4><div class="meta">${chip('in_progress', '📷 Field photos')}<span>${esc(p.name)}</span><span>· ${esc(w.name)}</span><span>· ${ago(r.created_at)}</span></div>${r.notes ? `<p>${esc(r.notes)}</p>` : ''}</div></div>`;
+  if (r.kind === 'completed') return `<div class="card dcard" style="grid-template-columns:150px 1fr" data-act="openReport" data-id="${r.id}">${thumbs(r.photos)}<div><h4>${esc(t?.title || 'Task')}</h4><div class="meta">${chip('completed', 'Completed')}<span>${esc(p.name)}</span><span>· ${esc(w.name)}</span><span>· ${ago(r.created_at)}</span></div>${r.notes ? `<p>${esc(r.notes)}</p>` : ''}</div></div>`;
+  return `<div class="card dcard ${r.reviewed ? '' : 'new'}" style="animation-delay:${i * 40}ms" data-act="openReport" data-id="${r.id}">${thumbs(r.photos)}
+    <div><h4>${esc(t?.title || 'Task')} ${r.reviewed ? chip('ok', '✓ reviewed') : chip('delayed', 'new')}</h4>
+    <div class="meta"><span>${esc(p.name)}</span><span>· ${esc(w.name)} (${esc(w.trade)})</span><span>· ${ago(r.created_at)}</span><span>· 📷 ${r.photos.length}</span></div>
+    <p>“${esc(r.reason)}”</p>
+    <div class="meta"><span class="ai-badge">🧠 ${CAUSE_ICON[r.ai_cause] || ''} ${esc(r.ai_cause)}</span>${chip(r.severity, r.severity + ' severity')}<span class="conf">${Math.round(r.ai_confidence * 100)}% confidence</span></div></div>
+    <div class="days-late"><b>${r.delay_days}</b><small>day${r.delay_days === 1 ? '' : 's'} late</small></div></div>`;
+}
+function openReport(id) {
+  const r = S.data.reports.find(x => x.id === id); if (!r) return;
+  const t = task(r.task_id), w = worker(r.worker_id), p = project(r.project_id);
+  const gal = r.photos.length ? `<div class="gallery">${r.photos.map((ph, i) => `<img src="${esc(ph)}" alt="Evidence ${i + 1}" data-act="lb" data-id="${esc(id)}" data-i="${i}">`).join('')}</div>` : '<div class="hint">No photos attached.</div>';
+  if (r.kind === 'completed' || r.kind === 'photo') {
+    openModal(`<div class="modal-head"><div><h2>${esc(t?.title || 'Task')}</h2><p>${r.kind === 'photo' ? 'Field photos' : 'Completion report'} · ${esc(p.name)}</p></div><button class="icon-btn" data-act="closeModal">✕</button></div>
+    <div class="modal-body"><dl class="kv"><dt>${r.kind === 'photo' ? 'Sent by' : 'Completed by'}</dt><dd>${esc(w.name)} (${esc(w.trade)})</dd><dt>Time</dt><dd>${fmtDT(r.created_at)}</dd><dt>Notes</dt><dd>${esc(r.notes || '—')}</dd></dl><h4 style="margin:14px 0 4px">${r.kind === 'photo' ? 'Photos' : 'Photo proof'}</h4>${gal}</div>`, { wide: true });
+    return;
+  }
+  openModal(`<div class="modal-head"><div><h2>${esc(t?.title || 'Task')}</h2><p>${esc(p.name)} · reported by ${esc(w.name)} · ${fmtDT(r.created_at)}</p></div><button class="icon-btn" data-act="closeModal">✕</button></div>
+  <div class="modal-body">
+    <div class="ai-panel"><h4>🧠 AI delay analysis</h4>
+      <div class="big">${CAUSE_ICON[r.ai_cause] || ''} Late due to: ${esc(r.ai_cause)}</div>
+      <div class="meta"><span><b style="color:var(--text)">${esc(t?.title || 'Task')}</b> is running <b style="color:#ff9aa3">${r.delay_days} day${r.delay_days === 1 ? '' : 's'}</b> behind schedule</span></div>
+      <div class="meta" style="margin-top:8px">${chip(r.severity, r.severity + ' severity')}<span>${Math.round(r.ai_confidence * 100)}% confidence</span>${(r.ai_keywords || []).length ? `<span>· matched: ${r.ai_keywords.map(k => `<i class="chip neutral">${esc(k)}</i>`).join(' ')}</span>` : ''}</div>
+      <div style="margin-top:10px;font-size:13px"><b>Suggested action:</b> ${esc(r.ai_action)}</div></div>
+    <dl class="kv"><dt>Worker's reason</dt><dd>“${esc(r.reason)}”</dd><dt>Cause selected</dt><dd>${esc(r.cause)}</dd><dt>Worker</dt><dd>${esc(w.name)} · ${esc(w.trade)}</dd><dt>Task due</dt><dd>${fmtDate(t?.due_date)} ${t ? statusChip(t) : ''}</dd>${r.notes ? `<dt>Extra notes</dt><dd>${esc(r.notes)}</dd>` : ''}${r.manager_note ? `<dt>Manager note</dt><dd>${esc(r.manager_note)}</dd>` : ''}</dl>
+    <h4 style="margin:14px 0 4px">📷 Photo evidence (${r.photos.length})</h4>${gal}
+    ${r.reviewed ? '' : `<div class="field" style="margin-top:18px"><label>Manager note (optional)</label><textarea class="inp" id="mgrNote" placeholder="e.g. Calling supplier now, extra truck arriving tomorrow"></textarea></div>`}</div>
+  <div class="modal-foot"><span class="sp">${r.reviewed ? '✓ Reviewed' : 'Not reviewed yet'}</span><button class="btn" data-act="closeModal">Close</button>${t && t.status !== 'in_progress' ? `<button class="btn warn" data-act="reopen" data-id="${t.id}" data-close="1">Reopen task</button>` : ''}${r.reviewed ? '' : `<button class="btn primary" data-act="review" data-id="${esc(id)}">Mark reviewed</button>`}</div>`, { wide: true });
+}
+function openTask(id) {
+  const t = task(id); if (!t) return;
+  const ups = S.data.updates.filter(u => u.task_id === id), reps = S.data.reports.filter(r => r.task_id === id), w = worker(t.assignee);
+  openModal(`<div class="modal-head"><div><h2>${esc(t.title)}</h2><p>${esc(project(t.project_id).name)} · ${esc(t.trade)}</p></div><button class="icon-btn" data-act="closeModal">✕</button></div>
+  <div class="modal-body">${(() => { const dr = reps.find(r => r.kind === 'delay'); return dr ? `<div class="ai-panel"><h4>🧠 Why this work is delayed</h4><div class="big">${CAUSE_ICON[dr.ai_cause] || ''} ${esc(dr.ai_cause)} · ${dr.delay_days} day${dr.delay_days === 1 ? '' : 's'} late</div><div class="meta" style="margin-top:6px">${chip(dr.severity, dr.severity + ' severity')}<span>“${esc(dr.reason)}”</span></div><div style="margin-top:8px;font-size:13px"><b>Suggested action:</b> ${esc(dr.ai_action)}</div><button class="btn sm warn" style="margin-top:10px" data-act="openReport" data-id="${dr.id}">Open full delay report${dr.reviewed ? '' : ' & review'}</button></div>` : ''; })()}<dl class="kv"><dt>Assigned to</dt><dd><div class="person">${avatar(w)} ${esc(w.name)}</div></dd><dt>Status</dt><dd>${statusChip(t)}</dd><dt>Progress</dt><dd>${t.status === 'completed' ? 100 : t.progress}%</dd><dt>Schedule</dt><dd>${fmtDate(t.start_date)} → ${fmtDate(t.due_date)}</dd><dt>Details</dt><dd>${esc(t.description || '—')}</dd></dl>
+  <h4 style="margin:14px 0 8px">Worker updates</h4>${ups.length ? `<div class="feed">${ups.map(u => `<div class="ev"><div class="bubble" style="background:rgba(95,211,232,.15)">↗</div><div><p>${u.progress}% — ${esc(u.note || 'progress update')}</p><small>${ago(u.created_at)}</small></div></div>`).join('')}</div>` : '<div class="hint">No progress updates yet.</div>'}
+  <h4 style="margin:14px 0 8px">Reports</h4>${reps.length ? `<div class="list">${reps.map(r => `<button class="item" data-act="openReport" data-id="${r.id}"><span class="ic ${r.kind === 'delay' ? 'red' : ''}">${r.kind === 'delay' ? '⚠' : r.kind === 'photo' ? '📷' : '✓'}</span><span class="grow"><b>${r.kind === 'delay' ? esc(r.ai_cause) + ' · ' + r.delay_days + 'd late' : r.kind === 'photo' ? 'Field photos' : 'Completed'}</b><small>${ago(r.created_at)} · ${r.photos.length} photo(s)</small></span></button>`).join('')}</div>` : '<div class="hint">No reports yet.</div>'}
+  ${reps.some(r => r.photos.length) ? `<h4 style="margin:14px 0 4px">📷 Photos for this work</h4><div class="gallery">${reps.map(r => r.photos.map((ph, i) => `<img src="${esc(ph)}" alt="Site photo" data-act="lb" data-id="${esc(r.id)}" data-i="${i}">`).join('')).join('')}</div>` : ''}</div>`);
+}
+
+/* ---- manager actions ---- */
+async function act(fn, okMsg) { try { await fn(); if (okMsg) toast(okMsg); await refresh(); } catch (e) { toast(e.message, 'err', 'Error'); } }
+
+/* ---- new project wizard ---- */
+let W = null;
+async function openWizard() {
+  if (!S.templates) { try { S.templates = await api('/api/templates'); } catch (e) { return toast(e.message, 'err'); } }
+  W = { step: 1, name: '', location: '', template: null, start: S.data.today, tasks: [], err: '', busy: false };
+  openModal('', { wide: true, sticky: true }); drawWizard();
+}
+function pickTemplate(name) {
+  W.template = name;
+  W.tasks = S.templates.templates[name].map(t => ({ ...t, on: true, assignee: S.templates.trade_owner[t.trade] || 'worker1', due: '', edited: false }));
+  recomputeDue();
+}
+function recomputeDue() { let cur = W.start; W.tasks.forEach(t => { if (!t.on) return; cur = addDays(cur, t.duration_days); if (!t.edited) t.due = cur; }); }
+const wsel = () => W.tasks.filter(t => t.on);
+function drawWizard() {
+  const step = W.step;
+  const head = `<div class="modal-head"><div><h2>New project</h2><p>${step === 1 ? 'Tell us about the project and pick its type.' : `We found <b>${W.tasks.length}</b> related work packages for ${esc(W.template)}. Tick what applies and assign every field.`}</p>
+    <div class="steps"><div class="step ${step === 1 ? 'on' : 'done'}"><i>${step > 1 ? '✓' : '1'}</i>Project</div><div class="step-sep"></div><div class="step ${step === 2 ? 'on' : ''}"><i>2</i>Work & assignments</div></div></div><button class="icon-btn" data-act="wizClose">✕</button></div>`;
+  let body, foot;
+  if (step === 1) {
+    body = `<div class="modal-body"><div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><div class="field"><label>Project name *</label><input class="inp" id="wName" value="${esc(W.name)}" placeholder="e.g. Lakeview Towers"></div><div class="field"><label>Location</label><input class="inp" id="wLoc" value="${esc(W.location)}" placeholder="City, State"></div>
+      <div class="field"><label>Start date</label><input class="inp" type="date" id="wStart" value="${esc(W.start)}"></div></div>
+      <div class="field"><label>Project type * <span style="text-transform:none;letter-spacing:0;font-weight:400">— prebuilt work breakdown loads automatically</span></label></div>
+      <div class="tmpl-grid">${Object.entries(S.templates.templates).map(([n, items]) => `<button class="tmpl ${W.template === n ? 'sel' : ''}" data-act="wizTemplate" data-id="${esc(n)}"><span class="emoji">${EMOJI[n] || '🏗️'}</span><b>${esc(n)}</b><small>${items.length} work packages · ${new Set(items.map(i => i.trade)).size} fields</small></button>`).join('')}</div>
+      <div class="err" id="wErr">${esc(W.err)}</div></div>`;
+    foot = `<div class="modal-foot"><button class="btn" data-act="wizClose">Cancel</button><button class="btn primary" data-act="wizNext">Show related work →</button></div>`;
+  } else {
+    const sel = wsel(), fields = new Set(sel.map(t => t.trade)), workers = new Set(sel.map(t => t.assignee));
+    const end = sel.length ? sel.reduce((m, t) => t.due > m ? t.due : m, W.start) : W.start;
+    const groups = S.templates.trades.filter(tr => W.tasks.some(t => t.trade === tr));
+    const wopts = (tr, cur) => { const own = S.data.workers.filter(w => w.trade === tr), other = S.data.workers.filter(w => w.trade !== tr); return [...own, ...other].map(w => `<option value="${w.id}" ${w.id === cur ? 'selected' : ''}>${esc(w.name)} · ${esc(w.trade)}</option>`).join(''); };
+    body = `<div class="modal-body"><div class="summary-bar"><div class="card"><b>${sel.length}</b><small>of ${W.tasks.length} work packages</small></div><div class="card"><b>${fields.size}</b><small>fields involved</small></div><div class="card"><b>${workers.size}</b><small>workers assigned</small></div><div class="card"><b>${fmtDate(end)}</b><small>estimated finish</small></div></div>
+      <div class="panel-head"><div class="tabs"><button class="tab" data-act="wizAll" data-id="1">Select all</button><button class="tab" data-act="wizAll" data-id="0">Clear</button><button class="tab on" data-act="wizAuto">⚡ Auto-assign by field</button></div><button class="btn sm" data-act="wizCustom">＋ Add custom work</button></div>
+      ${groups.map(tr => { const g = W.tasks.map((t, i) => ({ t, i })).filter(x => x.t.trade === tr); const n = g.filter(x => x.t.on).length;
+        return `<div class="trade-group"><div class="trade-head"><span>${esc(tr)}</span>${chip('neutral', n + '/' + g.length)}<div class="sp">Assign all to <select class="sel-inp" style="width:170px;padding:6px 8px" data-change="wizGroup" data-id="${esc(tr)}"><option value="">— choose —</option>${wopts(tr, '')}</select></div></div>
+        ${g.map(({ t, i }) => `<div class="wrow ${t.on ? '' : 'off'}"><input type="checkbox" ${t.on ? 'checked' : ''} data-change="wizTog" data-id="${i}"><div><b>${esc(t.title)}</b><small>${esc(t.description)}</small></div>
+        <select class="sel-inp" data-change="wizAsg" data-id="${i}" ${t.on ? '' : 'disabled'}>${wopts(tr, t.assignee)}</select><input class="inp" type="date" value="${esc(t.due)}" data-change="wizDue" data-id="${i}" ${t.on ? '' : 'disabled'}><span class="dur">${t.duration_days}d</span></div>`).join('')}</div>`; }).join('')}
+      <div class="err" id="wErr">${esc(W.err)}</div></div>`;
+    foot = `<div class="modal-foot"><span class="sp">${sel.length} work packages will be assigned</span><button class="btn" data-act="wizBack">← Back</button><button class="btn primary" data-act="wizCreate" ${W.busy ? 'disabled' : ''}>${W.busy ? 'Creating…' : '🚀 Create project & notify workers'}</button></div>`;
+  }
+  setModal(head + body + foot);
+}
+function wizReadStep1() { W.name = ($('#wName')?.value || '').trim(); W.location = ($('#wLoc')?.value || '').trim(); const s = $('#wStart')?.value; if (s) W.start = s; }
+function wizCustom() {
+  const trades = S.templates.trades;
+  const m = document.createElement('div'); m.className = 'modal-bg'; m.style.zIndex = 60;
+  m.innerHTML = `<div class="modal" style="width:min(460px,100%)"><div class="modal-head"><div><h2>Add custom work</h2></div></div><div class="modal-body"><div class="field"><label>Work title *</label><input class="inp" id="cTitle"></div><div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><div class="field"><label>Field</label><select class="sel-inp" id="cTrade">${trades.map(t => `<option>${esc(t)}</option>`).join('')}</select></div><div class="field"><label>Duration (days)</label><input class="inp" id="cDur" type="number" min="1" value="2"></div></div></div><div class="modal-foot"><button class="btn" id="cCancel">Cancel</button><button class="btn primary" id="cAdd">Add</button></div></div>`;
+  document.body.appendChild(m);
+  $('#cCancel', m).onclick = () => m.remove();
+  $('#cAdd', m).onclick = () => { const title = $('#cTitle', m).value.trim(); if (!title) return; const trade = $('#cTrade', m).value; W.tasks.push({ index: -1, title, trade, description: 'Custom work package', duration_days: Math.max(1, +$('#cDur', m).value || 1), on: true, assignee: S.templates.trade_owner[trade] || 'worker1', due: '', edited: false }); recomputeDue(); m.remove(); drawWizard(); };
+  setTimeout(() => $('#cTitle', m).focus(), 30);
+}
+async function wizCreate() {
+  const sel = wsel();
+  if (!sel.length) { W.err = 'Select at least one work package.'; return drawWizard(); }
+  W.busy = true; W.err = ''; drawWizard();
+  try {
+    const r = await api('/api/projects', { method: 'POST', json: { name: W.name, location: W.location, template: W.template, start_date: W.start, tasks: sel.map(t => ({ title: t.title, trade: t.trade, description: t.description, duration_days: t.duration_days, assignee: t.assignee, due_date: t.due })) } });
+    closeModal(); S.page = 'projects'; S.open[r.id] = true; toast(`Project created with ${r.task_count} work packages — workers notified`, '', '✓ Done'); await refresh();
+  } catch (e) { W.busy = false; W.err = e.message; drawWizard(); }
+}
+function addTaskModal(pid) {
+  const tr = S.templates?.trades || ['Civil', 'Structural', 'Electrical', 'Plumbing', 'Mechanical', 'Finishing', 'Safety', 'Quality', 'Planning'];
+  openModal(`<div class="modal-head"><div><h2>Add work package</h2><p>${esc(project(pid).name)}</p></div><button class="icon-btn" data-act="closeModal">✕</button></div><div class="modal-body">
+    <div class="field"><label>Title *</label><input class="inp" id="aTitle"></div><div class="field"><label>Description</label><input class="inp" id="aDesc"></div>
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><div class="field"><label>Field</label><select class="sel-inp" id="aTrade">${tr.map(t => `<option>${esc(t)}</option>`).join('')}</select></div>
+    <div class="field"><label>Assign to</label><select class="sel-inp" id="aWorker">${S.data.workers.map(w => `<option value="${w.id}">${esc(w.name)} · ${esc(w.trade)}</option>`).join('')}</select></div>
+    <div class="field"><label>Due date</label><input class="inp" type="date" id="aDue" value="${addDays(S.data.today, 3)}"></div><div class="field"><label>Duration (days)</label><input class="inp" type="number" min="1" id="aDur" value="2"></div></div><div class="err" id="aErr"></div></div>
+    <div class="modal-foot"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="addTaskGo" data-id="${pid}">Add & assign</button></div>`, { sticky: true });
+  const sync = () => { const t = $('#aTrade').value; const w = S.data.workers.find(w => w.trade === t); if (w) $('#aWorker').value = w.id; };
+  $('#aTrade').onchange = sync; sync();
+}
+
+/* ============================== WORKER ============================== */
+const photos = []; // pending uploads {blob,url}
+function renderWorker() {
+  S.shellFor = 'worker';
+  const d = S.data, me = S.me, T = d.tasks;
+  const active = T.filter(t => t.status !== 'completed'), done = T.filter(t => t.status === 'completed');
+  const list = S.workerTab === 'done' ? done : active;
+  const prio = { delayed: 0, in_progress: 1, assigned: 2 };
+  list.sort((a, b) => (b.is_overdue - a.is_overdue) || ((prio[a.status] ?? 3) - (prio[b.status] ?? 3)) || String(a.due_date).localeCompare(b.due_date));
+  const y = window.scrollY;
+  $('#app').innerHTML = `<div class="worker-main" id="page">
+    <div class="wtop"><div class="whello"><h1>${greet()}, ${esc(me.name.split(' ')[0])} 👋</h1><p>${esc(me.trade)} crew · your assigned work</p></div><div style="display:flex;gap:8px;align-items:center"><div class="live-pill"></div><button class="icon-btn" data-act="logout" title="Sign out">${ICON.logout}</button></div></div>
+    <div class="wstats"><div class="card"><b style="color:var(--blue)">${T.filter(t => t.status === 'assigned').length}</b><small>To start</small></div><div class="card"><b style="color:var(--cyan)">${T.filter(t => t.status === 'in_progress' || t.status === 'delayed').length}</b><small>Working</small></div><div class="card"><b style="color:var(--mint)">${done.length}</b><small>Done</small></div></div>
+    <div class="panel-head"><div class="tabs"><button class="tab ${S.workerTab === 'active' ? 'on' : ''}" data-act="wTab" data-id="active">Active · ${active.length}</button><button class="tab ${S.workerTab === 'done' ? 'on' : ''}" data-act="wTab" data-id="done">Completed · ${done.length}</button></div></div>
+    ${list.length ? list.map(taskCard).join('') : `<div class="card">${emptyState(S.workerTab === 'done' ? 'Nothing completed yet' : 'No work assigned', S.workerTab === 'done' ? '' : 'New tasks from your manager appear here instantly.')}</div>`}</div>`;
+  setLive(); window.scrollTo(0, y);
+}
+function taskCard(t, i) {
+  const p = project(t.project_id), rep = S.data.reports.find(r => r.task_id === t.id && r.kind === 'delay');
+  const cls = t.is_overdue && t.status !== 'completed' ? 'overdue' : t.status;
+  const pr = t.status === 'completed' ? 100 : t.progress || 0;
+  return `<div class="card tcard ${cls}" style="animation-delay:${i * 40}ms"><div class="top"><div><h4>${esc(t.title)}</h4><div class="hint">${esc(p.name)} · ${esc(p.location)}</div></div>${statusChip(t)}</div>
+    <div class="desc">${esc(t.description)}</div>
+    <div class="meta"><span>📅 Due ${fmtDate(t.due_date)}</span>${t.is_overdue ? chip('overdue', 'Past due') : ''}<span>· ${pr}% done</span></div>
+    <div class="track" style="margin-top:10px;--c:${t.status === 'delayed' ? '#ff6f7b' : '#67e0b1'}"><i style="width:${pr}%"></i></div>
+    ${t.status === 'delayed' && rep ? `<div class="note-box"><b>You reported a delay:</b> ${esc(rep.ai_cause)} — “${esc(rep.reason)}”</div>` : ''}
+    ${t.status === 'completed' ? `<div class="hint" style="margin-top:10px">✓ Completed ${ago(t.completed_at)}</div>` : `<div class="actions">
+      ${t.status === 'assigned' ? `<button class="btn" data-act="wStart" data-id="${t.id}">▶ Start work</button>` : `<button class="btn" data-act="wProgress" data-id="${t.id}">↗ Update progress</button>`}
+      <button class="btn" data-act="wPhoto" data-id="${t.id}">📷 Send photo</button>
+      <button class="btn primary" data-act="wFinish" data-id="${t.id}">✓ Finish task</button></div>`}</div>`;
+}
+function progressModal(id) {
+  const t = task(id); photos.length = 0;
+  openModal(`<div class="modal-head"><div><h2>Update progress</h2><p>${esc(t.title)}</p></div><button class="icon-btn" data-act="closeModal">✕</button></div><div class="modal-body">
+    <div class="range-val" id="pv">${t.progress || 0}%</div><input class="range" id="pr" type="range" min="0" max="99" step="5" value="${t.progress || 0}">
+    <div class="field" style="margin-top:18px"><label>What was done? (optional)</label><textarea class="inp" id="pn" placeholder="e.g. Finished blocks A and B"></textarea></div>${photoPicker(false)}<div class="err" id="rErr"></div></div>
+    <div class="modal-foot"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="wProgressGo" data-id="${id}">Send update to manager</button></div>`);
+  $('#pr').oninput = e => $('#pv').textContent = e.target.value + '%';
+}
+function finishModal(id) {
+  const t = task(id);
+  openModal(`<div class="modal-head"><div><h2>Finish task</h2><p>${esc(t.title)}</p></div><button class="icon-btn" data-act="closeModal">✕</button></div><div class="modal-body"><p class="hint" style="margin-bottom:14px;text-align:center">How did this task go?</p><div class="choice">
+    <button class="ok" data-act="wDone" data-id="${id}"><span class="em">✅</span><b>Completed</b><small>Work finished</small></button>
+    <button class="late" data-act="wDelay" data-id="${id}"><span class="em">⚠️</span><b>Delayed</b><small>Report reason + photo proof</small></button></div></div>`);
+}
+const photoPicker = (req) => `<div class="field"><label>Photos ${req ? '* (required as proof)' : '(optional)'}</label><div class="photo-actions"><button type="button" class="btn sm" data-act="camera">📷 Take photo</button><button type="button" class="btn sm" data-act="gallery">🖼️ Upload from gallery</button></div>
+  <input type="file" id="fCam" accept="image/*" capture="environment" hidden><input type="file" id="fUp" accept="image/*" multiple hidden><div class="previews" id="previews"></div><div class="drop-hint" id="dropHint">No photos added yet</div></div>`;
+function drawPreviews() {
+  const el = $('#previews'); if (!el) return;
+  el.innerHTML = photos.map((p, i) => `<div class="pv"><img src="${p.url}" alt=""><button type="button" data-act="rmPhoto" data-id="${i}">✕</button></div>`).join('');
+  const h = $('#dropHint'); if (h) h.style.display = photos.length ? 'none' : '';
+}
+async function compress(file) {
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+  try {
+    const bmp = await createImageBitmap(file), max = 1600, k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .82));
+    return blob && blob.size < file.size ? blob : file;
+  } catch { return file; }
+}
+async function addPhotos(files) {
+  for (const f of files) { const b = await compress(f); photos.push({ blob: b, url: URL.createObjectURL(b), name: 'photo-' + Date.now() + '-' + photos.length + (b.type === 'image/jpeg' ? '.jpg' : '.' + (f.name.split('.').pop() || 'jpg')) }); }
+  drawPreviews();
+}
+document.addEventListener('change', e => {
+  if (e.target.id === 'fCam' || e.target.id === 'fUp') { addPhotos([...e.target.files]); e.target.value = ''; }
+});
+function doneModal(id) {
+  const t = task(id); photos.length = 0;
+  openModal(`<div class="modal-head"><div><h2>Mark as completed ✅</h2><p>${esc(t.title)}</p></div><button class="icon-btn" data-act="closeModal">✕</button></div><div class="modal-body">
+    <div class="field"><label>Notes (optional)</label><textarea class="inp" id="rNotes" placeholder="Anything the manager should know"></textarea></div>${photoPicker(false)}<div class="err" id="rErr"></div></div>
+    <div class="modal-foot"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="submitDone" data-id="${id}">Submit as completed</button></div>`, { sticky: true });
+}
+function photoModal(id) {
+  const t = task(id); photos.length = 0;
+  openModal(`<div class="modal-head"><div><h2>Send photos 📷</h2><p>${esc(t.title)}</p></div><button class="icon-btn" data-act="closeModal">✕</button></div><div class="modal-body">
+    <p class="hint" style="margin-bottom:12px">Show the manager how the work looks right now.</p>${photoPicker(true).replace(' * (required as proof)', ' *')}
+    <div class="field"><label>Note (optional)</label><textarea class="inp" id="rNotes" placeholder="e.g. Slab shuttering finished on the 2nd floor"></textarea></div><div class="err" id="rErr"></div></div>
+    <div class="modal-foot"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="submitPhoto" data-id="${id}">Send to manager</button></div>`, { sticky: true });
+}
+let delayCause = '';
+function delayModal(id) {
+  const t = task(id); photos.length = 0; delayCause = '';
+  const causes = Object.keys(CAUSE_ICON);
+  const late = Math.max(1, Math.round((new Date(S.data.today) - new Date(t.due_date)) / 864e5) || 1);
+  openModal(`<div class="modal-head"><div><h2>Report delay ⚠️</h2><p>${esc(t.title)}</p></div><button class="icon-btn" data-act="closeModal">✕</button></div><div class="modal-body">
+    <div class="field"><label>1 · What caused the delay? *</label><div class="cause-grid">${causes.map(c => `<button type="button" class="cause" data-act="pickCause" data-id="${esc(c)}">${CAUSE_ICON[c]} ${esc(c)}</button>`).join('')}</div></div>
+    <div class="field"><label>2 · Explain what happened *</label><textarea class="inp" id="dReason" placeholder="e.g. Cement delivery arrived 2 days late, crew waiting on site"></textarea></div>
+    <div class="field"><label>3 · How many days late? *</label><input class="inp" type="number" min="0" max="365" id="dDays" value="${late}" style="max-width:140px"></div>
+    <div class="field"><label>Extra notes (optional)</label><input class="inp" id="dNotes"></div>
+    ${photoPicker(true)}<div class="err" id="rErr"></div></div>
+    <div class="modal-foot"><button class="btn" data-act="closeModal">Cancel</button><button class="btn danger" data-act="submitDelay" data-id="${id}">Submit delay report</button></div>`, { sticky: true });
+}
+async function submit(id, kind) {
+  const err = $('#rErr'); err.textContent = '';
+  const fd = new FormData(); fd.append('kind', kind);
+  if (kind === 'delay') {
+    const reason = $('#dReason').value.trim();
+    if (!delayCause) return err.textContent = 'Please choose the cause of the delay.';
+    if (reason.length < 5) return err.textContent = 'Please explain what happened.';
+    if (!photos.length) return err.textContent = 'Please add at least one photo as proof.';
+    fd.append('cause', delayCause); fd.append('reason', reason); fd.append('delay_days', $('#dDays').value || '0'); fd.append('notes', $('#dNotes').value);
+  } else { if (kind === 'photo' && !photos.length) return err.textContent = 'Please add at least one photo.'; fd.append('notes', $('#rNotes').value); }
+  photos.forEach(p => fd.append('photos', p.blob, p.name));
+  const btn = $('.modal-foot .btn:last-child'); btn.disabled = true; btn.textContent = 'Uploading…';
+  try {
+    await api(`/api/tasks/${id}/report`, { method: 'POST', body: fd });
+    closeModal(); toast(kind === 'delay' ? 'Delay report sent to your manager' : kind === 'photo' ? 'Photos sent to your manager' : 'Marked as completed — great work!', '', '✓ Submitted'); await refresh();
+  } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = kind === 'delay' ? 'Submit delay report' : kind === 'photo' ? 'Send to manager' : 'Submit as completed'; }
+}
+
+/* ============================== events ============================== */
+const ACT = {
+  goLogin() { showLogin(); },
+  goLanding() { showLanding(); },
+  scrollTo(d) { document.getElementById(d.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  gotoTask(d) {
+    const t = task(d.id); if (!t) return;
+    S.page = 'projects'; S.open[t.project_id] = true; render();
+    setTimeout(() => { const row = document.getElementById('task-' + t.id); if (row) { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); row.classList.add('flash'); setTimeout(() => row.classList.remove('flash'), 3500); } }, 80);
+    openTask(t.id);
+  },
+  wPhoto(d) { photoModal(d.id); },
+  pickRole(d, el) { loginSel = d.id; $$('.role').forEach(r => r.classList.toggle('sel', r === el)); $('#pin')?.focus(); },
+  logout() { logout(); },
+  nav(d) { S.page = d.id; render(); window.scrollTo(0, 0); },
+  newProject() { openWizard(); },
+  closeModal() { closeModal(); },
+  gotoProject(d) { S.page = 'projects'; S.open[d.id] = true; render(); setTimeout(() => document.getElementById('proj-' + d.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); },
+  toggleProject(d) { const i = S.data.projects.findIndex(p => p.id === d.id); S.open[d.id] = !(S.open[d.id] ?? i === 0); render(); },
+  delProject(d) { if (confirm('Delete this project and all its tasks, reports and photos records?')) act(() => api('/api/projects/' + d.id, { method: 'DELETE' }), 'Project deleted'); },
+  addTask(d) { addTaskModal(d.id); },
+  async addTaskGo(d) {
+    const title = $('#aTitle').value.trim(); if (!title) return $('#aErr').textContent = 'Title is required';
+    try { await api(`/api/projects/${d.id}/tasks`, { method: 'POST', json: { title, description: $('#aDesc').value, trade: $('#aTrade').value, assignee: $('#aWorker').value, due_date: $('#aDue').value, duration_days: +$('#aDur').value || 1 } }); closeModal(); toast('Work assigned'); refresh(); } catch (e) { $('#aErr').textContent = e.message; }
+  },
+  openTask(d, el, ev) { ev.preventDefault(); openTask(d.id); },
+  openReport(d) { openReport(d.id); },
+  delayTab(d) { S.delayTab = d.id; render(); },
+  reopen(d) { act(() => api(`/api/tasks/${d.id}/reopen`, { method: 'POST' }), 'Task reopened').then(() => { if (d.close) closeModal(); }); },
+  async review(d) { const note = $('#mgrNote')?.value || ''; try { await api(`/api/reports/${d.id}/review`, { method: 'POST', json: { note } }); closeModal(); toast('Report marked reviewed'); refresh(); } catch (e) { toast(e.message, 'err'); } },
+  lb(d) { const r = S.data.reports.find(x => x.id === d.id); openLightbox(r.photos, +d.i); },
+  lbClose() { closeLightbox(); },
+  lbPrev() { lb.i = (lb.i - 1 + lb.list.length) % lb.list.length; drawLightbox(); },
+  lbNext() { lb.i = (lb.i + 1) % lb.list.length; drawLightbox(); },
+  /* wizard */
+  wizClose() { if (confirm('Discard this new project?')) closeModal(); },
+  wizTemplate(d) { wizReadStep1(); pickTemplate(d.id); W.err = ''; drawWizard(); },
+  wizNext() { wizReadStep1(); if (!W.name) { W.err = 'Please enter a project name.'; return drawWizard(); } if (!W.template) { W.err = 'Please choose a project type.'; return drawWizard(); } recomputeDue(); W.err = ''; W.step = 2; drawWizard(); },
+  wizBack() { W.step = 1; drawWizard(); },
+  wizAll(d) { W.tasks.forEach(t => t.on = d.id === '1'); recomputeDue(); drawWizard(); },
+  wizAuto() { W.tasks.forEach(t => t.assignee = S.templates.trade_owner[t.trade] || 'worker1'); drawWizard(); toast('Assigned each work package to the matching field specialist'); },
+  wizCustom() { wizCustom(); },
+  wizCreate() { wizCreate(); },
+  /* worker */
+  wTab(d) { S.workerTab = d.id; render(); },
+  wStart(d) { act(() => api(`/api/tasks/${d.id}/start`, { method: 'POST' }), 'Work started — manager notified'); },
+  wProgress(d) { progressModal(d.id); },
+  async wProgressGo(d) {
+    const btn = $('.modal-foot .btn:last-child'); btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const note = $('#pn').value;
+      await api(`/api/tasks/${d.id}/progress`, { method: 'POST', json: { progress: +$('#pr').value, note } });
+      if (photos.length) { const fd = new FormData(); fd.append('kind', 'photo'); fd.append('notes', note); photos.forEach(p => fd.append('photos', p.blob, p.name)); await api(`/api/tasks/${d.id}/report`, { method: 'POST', body: fd }); }
+      const hadPhotos = photos.length; closeModal(); toast(hadPhotos ? 'Progress and photos sent to manager' : 'Progress sent to manager'); refresh();
+    } catch (e) { $('#rErr').textContent = e.message; btn.disabled = false; btn.textContent = 'Send update to manager'; }
+  },
+  wFinish(d) { finishModal(d.id); },
+  wDone(d) { doneModal(d.id); },
+  wDelay(d) { delayModal(d.id); },
+  pickCause(d, el) { delayCause = d.id; $$('.cause').forEach(c => c.classList.toggle('sel', c === el)); },
+  camera() { $('#fCam').click(); },
+  gallery() { $('#fUp').click(); },
+  rmPhoto(d) { URL.revokeObjectURL(photos[+d.id]?.url); photos.splice(+d.id, 1); drawPreviews(); },
+  submitDone(d) { submit(d.id, 'completed'); },
+  submitPhoto(d) { submit(d.id, 'photo'); },
+  submitDelay(d) { submit(d.id, 'delay'); },
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const fn = ACT[el.dataset.act]; if (!fn) return;
+  if (el.tagName === 'A') e.preventDefault();
+  fn(el.dataset, el, e);
+});
+const CHG = {
+  assign(el) { act(() => api(`/api/tasks/${el.dataset.id}/assign`, { method: 'PATCH', json: { assignee: el.value } }), 'Reassigned — worker notified'); },
+  due(el) { if (el.value) act(() => api(`/api/tasks/${el.dataset.id}/assign`, { method: 'PATCH', json: { due_date: el.value } }), 'Due date updated'); },
+  wizTog(el) { W.tasks[+el.dataset.id].on = el.checked; recomputeDue(); drawWizard(); },
+  wizAsg(el) { W.tasks[+el.dataset.id].assignee = el.value; drawWizard(); },
+  wizDue(el) { const t = W.tasks[+el.dataset.id]; t.due = el.value; t.edited = true; drawWizard(); },
+  wizGroup(el) { if (!el.value) return; W.tasks.forEach(t => { if (t.trade === el.dataset.id && t.on) t.assignee = el.value; }); drawWizard(); },
+};
+document.addEventListener('change', e => { const el = e.target.closest('[data-change]'); if (el && CHG[el.dataset.change]) CHG[el.dataset.change](el); });
+
+/* ============================== boot ============================== */
+(async function boot() {
+  const tk = store.get('infrasync_token');
+  if (tk) {
+    S.token = tk;
+    try { await startApp(); return; } catch { S.token = null; store.del('infrasync_token'); }
+  }
+  showLanding();
+})();
+})();
+
+</script>
 </body>
 </html>
